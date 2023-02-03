@@ -1,0 +1,8 @@
+.cmake/
+.ninja*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+input/
+.idea/
+.DS_Store
