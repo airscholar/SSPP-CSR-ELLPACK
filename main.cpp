@@ -8,8 +8,8 @@
 
 using namespace std;
 
-vector<vector<int>> convertInputToMatrix(int rows, int cols, int nonZeroElements, int *I, int *J, double *val) {
-    vector<vector<int>> matrix(rows);
+vector<vector<double>> convertInputToMatrix(int rows, int cols, int nonZeroElements, int *I, int *J, double *val) {
+    vector<vector<double>> matrix(rows);
 
     //initialize the matrix
     for (int i = 0; i < rows; i++) {
@@ -24,7 +24,7 @@ vector<vector<int>> convertInputToMatrix(int rows, int cols, int nonZeroElements
     return matrix;
 }
 
-vector<int> extractIRP(vector<vector<int>> input){
+void IRP(vector<vector<double>> input){
     vector<int> irp;
     int count = 0;
     for (int i = 0; i < input.size(); i++) {
@@ -43,7 +43,34 @@ vector<int> extractIRP(vector<vector<int>> input){
         }
     }
 
-    return irp;
+    printf("IRP: ");
+    for (int i = 0; i < irp.size(); i++) {
+        printf("%d ", irp[i]);
+    }
+    printf("\n");
+}
+void JA(vector<vector<double>> input){
+    //print the column index
+    printf("JA: ");
+    for (int i = 0; i < input.size(); i++) {
+        for (int j = 0; j < input[i].size(); j++) {
+            if (input[i][j] != 0) {
+                printf("%d ", j+1);
+            }
+        }
+    }
+    printf("\n");
+}
+void AS(vector<vector<double>> input) {
+    printf("AS: ");
+    for (int i = 0; i < input.size(); i++) {
+        for (int j = 0; j < input[i].size(); j++) {
+            if (input[i][j] != 0) {
+                printf("%d ", input[i][j]);
+            }
+        }
+    }
+    printf("\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -106,7 +133,7 @@ int main(int argc, char *argv[]) {
 //    for (i = 0; i < nz; i++)
 //        fprintf(stdout, "%d %d %20.19g\n", I[i] + 1, J[i] + 1, val[i]);
 
-    vector<vector<int>> input = convertInputToMatrix(M, N, nz, I, J, val);
+    vector<vector<double>> input = convertInputToMatrix(M, N, nz, I, J, val);
 
     //the amtrix
     for (int i = 0; i < input.size(); i++) {
@@ -116,35 +143,9 @@ int main(int argc, char *argv[]) {
         printf("\n");
     }
 
-    vector<int> irp = extractIRP(input);
-    printf("IRP: ");
-    for (int i = 0; i < irp.size(); i++) {
-        printf("%d ", irp[i]);
-    }
-    printf("\n");
-
-
-    //print the column index
-    printf("JA: ");
-    for (int i = 0; i < input.size(); i++) {
-        for (int j = 0; j < input[i].size(); j++) {
-            if (input[i][j] != 0) {
-                printf("%d ", j+1);
-            }
-        }
-    }
-    printf("\n");
-
-    //print the non-zero elements
-    printf("AS: ");
-    for (int i = 0; i < input.size(); i++) {
-        for (int j = 0; j < input[i].size(); j++) {
-            if (input[i][j] != 0) {
-                printf("%d ", input[i][j]);
-            }
-        }
-    }
-
+    IRP(input);
+    JA(input);
+    AS(input);
 
     //free memory
     free(I);
