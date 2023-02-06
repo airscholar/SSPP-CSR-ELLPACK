@@ -1,77 +1,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include "mmio.h"
-#include <iostream>
-#include <string>
+#include "smallscale.h"
 #include <vector>
 #include <utility>
+#include "MatrixCSR.h"
+#include "MatrixELLPACK.h"
+#include "wtime.h"
 
 using namespace std;
-
-vector<vector<double>> convertInputToMatrix(int rows, int cols, int nonZeroElements, int *I, int *J, double *val) {
-    vector<vector<double>> matrix(rows);
-
-    //initialize the matrix
-    for (int i = 0; i < rows; i++) {
-        matrix[i].resize(cols);
-    }
-
-    //fill the matrix
-    for (int i = 0; i < nonZeroElements; i++) {
-        matrix[I[i]][J[i]] = val[i];
-    }
-
-    return matrix;
-}
-
-void IRP(vector<vector<double>> input){
-    vector<int> irp;
-    int count = 0;
-    for (int i = 0; i < input.size(); i++) {
-        int row_count = 0;
-        for (int j = 0; j < input[i].size(); j++) {
-            if(input[i][j] != 0) {
-                row_count++;
-                count++;
-                if(row_count == 1) {
-                    irp.push_back(count);
-                }
-            }
-        }
-        if(i == input.size()-1) {
-            irp.push_back(count+1);
-        }
-    }
-
-    printf("IRP: ");
-    for (int i = 0; i < irp.size(); i++) {
-        printf("%d ", irp[i]);
-    }
-    printf("\n");
-}
-void JA(vector<vector<double>> input){
-    //print the column index
-    printf("JA: ");
-    for (int i = 0; i < input.size(); i++) {
-        for (int j = 0; j < input[i].size(); j++) {
-            if (input[i][j] != 0) {
-                printf("%d ", j+1);
-            }
-        }
-    }
-    printf("\n");
-}
-void AS(vector<vector<double>> input) {
-    printf("AS: ");
-    for (int i = 0; i < input.size(); i++) {
-        for (int j = 0; j < input[i].size(); j++) {
-            if (input[i][j] != 0) {
-                printf("%d ", input[i][j]);
-            }
-        }
-    }
-    printf("\n");
-}
 
 int main(int argc, char *argv[]) {
     int ret_code;
@@ -110,10 +47,9 @@ int main(int argc, char *argv[]) {
 
     /* reseve memory for matrices */
 
-    I = (int *) malloc(nz * sizeof(int));
-    J = (int *) malloc(nz * sizeof(int));
+    I = (int *) malloc(nz * sizeof(int)); // row
+    J = (int *) malloc(nz * sizeof(int)); // col
     val = (double *) malloc(nz * sizeof(double));
-
 
     /* NOTE: when reading in doubles, ANSI C requires the use of the "l"  */
     /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
@@ -124,28 +60,23 @@ int main(int argc, char *argv[]) {
         I[i]--;  /* adjust from 1-based to 0-based */
         J[i]--;
     }
-
     if (f != stdin) fclose(f);
 
-//    mm_write_banner(stdout, matcode);
-//    mm_write_mtx_crd_size(stdout, M, N, nz);
+    printf("Dimensions: %d x %d, Non-zero elements: %d\n", M, N, nz);
 
-//    for (i = 0; i < nz; i++)
-//        fprintf(stdout, "%d %d %20.19g\n", I[i] + 1, J[i] + 1, val[i]);
+    //get start time
+    double t1 = wtime();
+    MatrixCSR csr(M, N, nz, I, J, val);
+    printf("=====================================\n");
+    double t2 = wtime();
+    printf("Time: %f\n", t2 - t1);
+    double time = t2 - t1;
+    double mflops = (2.0e-6) * M * N / time;
+    fprintf(stdout,"Multiplying matrices of size %d x %d: time %lf  MFLOPS %lf \n",M,N,time,mflops);
 
-    vector<vector<double>> input = convertInputToMatrix(M, N, nz, I, J, val);
 
-    //the amtrix
-    for (int i = 0; i < input.size(); i++) {
-        for (int j = 0; j < input[i].size(); j++) {
-            printf("%d ", input[i][j]);
-        }
-        printf("\n");
-    }
-
-    IRP(input);
-    JA(input);
-    AS(input);
+//    printf("ELLPACK\n");
+//    MatrixELLPACK ellpack(M, N, nz, I, J, val);
 
     //free memory
     free(I);
