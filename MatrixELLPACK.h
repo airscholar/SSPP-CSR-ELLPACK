@@ -19,16 +19,17 @@ private:
     double *val;
     int maxNZ;
 
-    std::vector<std::vector<int>> JA;
-    std::vector<std::vector<double>> AS;
+    int *IRP;
+    int *JA;
+    double *AS;
 public:
     MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double *val);
 
-    int* getI();
+    int *getI();
 
-    int* getJ();
+    int *getJ();
 
-    double* getVal();
+    double *getVal();
 
     int getRows();
 
@@ -36,13 +37,19 @@ public:
 
     int getNZ();
 
-    int getMaxNZ();
+    int getMaxNZ(int nz, int *I);
 
-    std::vector<std::vector<int>> getJA();
+    void sortData();
 
-    std::vector<std::vector<double>> getAS();
+    int *getJA();
 
-    std::vector<int> multiply(int rows, int maxNZ, std::vector<std::vector<int>> JA, std::vector<std::vector<double>> AS, std::vector<double> x);
+    void setJA(int nz, int *I, int *J);
+
+    double *getAS();
+
+    void setAS(double *val);
+
+    double *multiplyELLPack(double *x);
 };
 
 

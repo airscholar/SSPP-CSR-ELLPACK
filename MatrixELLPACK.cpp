@@ -1,8 +1,10 @@
 //
 // Created by Yusuf Ganiyu on 2/5/23.
 //
-
+#include "smallscale.h"
+#include <vector>
 #include "MatrixELLPACK.h"
+#include <omp.h>
 
 MatrixELLPACK::MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double *val) {
     this->rows = rows;
@@ -10,81 +12,173 @@ MatrixELLPACK::MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double 
     this->nz = nz;
     this->I = I;
     this->J = J;
+    this->val = val;
 
-    this->JA.resize(rows);
-    this->AS.resize(rows);
+    this->maxNZ = getMaxNZ(nz, I);
 
-    int *lPackNzTab = (int *) malloc(rows * sizeof(int));
+    this->JA = (int *) malloc(rows * maxNZ * sizeof(int));
+    this->AS = (double *) malloc(rows * maxNZ * sizeof(double));
 
-    // fill the lPackNzTab with zeros
-    for (int i = 0; i < rows; i++) {
-        lPackNzTab[i] = 0;
-    }
+    sortData();
 
-    maxNZ = lPackNzTab[0];
-    // fill the lPackNzTab with the number of non-zero elements in each row
-    for (int i = 1; i < rows; i++) {
-        if (lPackNzTab[i] > maxNZ) {
-            maxNZ = lPackNzTab[i];
-        }
-    }
+    setJA(nz, I, J);
 
-    // fill the JA and AS vectors with the zeros
-    for (int i = 0; i < rows; i++) {
-        JA[i].resize(maxNZ, 0);
-        AS[i].resize(maxNZ, 0);
-    }
+    setAS(val);
 
-    // fill the JA and AS vectors with the non-zero elements
-    for (int i = 0; i < nz; i++) {
-        JA[I[i]].push_back(J[i]);
-        AS[I[i]].push_back(val[i]);
-    }
-
-    //resize the JA and AS vectors to the maxNZ
-    for (int i = 0; i < rows; i++) {
-        if (JA[i].size() < maxNZ) {
-            JA[i].resize(maxNZ, JA[i][JA[i].size()]);
-            printf("JA size: %d", JA[i].size());
-        }
-        if (AS[i].size() < maxNZ) {
-            AS[i].resize(maxNZ, 0);
-        }
-    }
-
+    //print JA
     printf("JA: \n");
-    for (int i = 0; i < JA.size(); i++) {
-        for (int j = 0; j < JA[i].size(); j++) {
-            printf("%d ", JA[i][j]);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < maxNZ; j++) {
+            printf("%d ", this->getJA()[i * maxNZ + j] + 1);
         }
         printf("\n");
     }
 
+    //print AS
     printf("AS: \n");
-    for (int i = 0; i < AS.size(); i++) {
-        for (int j = 0; j < AS[i].size(); j++) {
-            printf("%.2f ", AS[i][j]);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < maxNZ; j++) {
+            printf("%.2f ", this->getAS()[i * maxNZ + j]);
         }
         printf("\n");
     }
 
-    // multiply the matrix
-//    this->multiply(rows, maxNZ, JA, AS, val);
 }
 
-std::vector<std::vector<int>> MatrixELLPACK::getJA() {
+void MatrixELLPACK::sortData(){
+    int i, j;
+    int temp;
+    double tempVal;
+    for (i = 0; i < nz - 1; ++i) {
+        for (j = 0; j < nz - 1 - i; ++j) {
+            if (I[j] > I[j + 1]) {
+                temp = I[j + 1];
+                I[j + 1] = I[j];
+                I[j] = temp;
+                temp = J[j + 1];
+                J[j + 1] = J[j];
+                J[j] = temp;
+                tempVal = val[j + 1];
+                val[j + 1] = val[j];
+                val[j] = tempVal;
+            }
+        }
+    }
+}
+
+// Returns the MAXNZ of the ELLPACK
+int MatrixELLPACK::getMaxNZ(int nz, int *I) {
+    // We create an array that will contain the number of non zero for each row
+    // from this array we will get the max, that is MAXNZ
+    int *temp = (int *) malloc(nz * sizeof(int));
+    // We initialise its values to zero
+    for (int i = 0; i < nz; i++) {
+        temp[i] = 0;
+    }
+
+    for (int i = 0; i < nz; i++) {
+        temp[I[i]]++;
+    }
+
+    int maximum = temp[0];
+
+    for (int i = 1; i < nz; i++) {
+        if (temp[i] > maximum)
+            maximum = temp[i];
+    }
+    return maximum;
+}
+
+int* MatrixELLPACK::getJA() {
     return this->JA;
 }
 
-std::vector<std::vector<double>> MatrixELLPACK::getAS() {
+void MatrixELLPACK::setJA(int nz, int *I, int *J) {
+    this->JA = new int[rows * maxNZ];
+    // Returns the JA of the ELLPACK
+    // Here we use the reordered I and J
+    int k, p, q;
+    k = 1;
+    int idx;
+
+    for (p = 1; p <= rows; p++) {
+        for (q = 1; q <= maxNZ; q++) {
+            idx = (p - 1) * maxNZ + (q - 1);
+            if (I[k - 1] + 1 == p) {
+                JA[idx] = J[k - 1];
+                k++;
+            } else
+                JA[idx] = J[k - 2];
+        }
+    }
+}
+
+double* MatrixELLPACK::getAS() {
     return this->AS;
 }
-//std::vector<int> MatrixELLPACK::multiply(int rows, int maxNZ, std::vector<std::vector<int>> JA, std::vector<std::vector<double>> AS, std::vector<double> x) {
-//    std::vector<int> result(rows, 0);
-//    for (int i = 0; i < rows; i++) {
-//        for (int j = 0; j < maxNZ; j++) {
-//            result[i] += AS[i][j] * x[JA[i][j]];
-//        }
-//    }
-//    return result;
-//}
+
+void MatrixELLPACK::setAS(double *val) {
+    this->AS = new double[rows * maxNZ];
+    // Returns the AS of the ELLPACK
+    int x, y, z;
+    int l = 1;
+    int idx;
+
+    for (x = 1; x <= rows; x++) {
+        for (y = 1; y <= maxNZ; y++) {
+            idx = (x - 1) * maxNZ + (y - 1);
+            if (I[l - 1] + 1 == x) {
+                AS[idx] = val[l - 1];
+                l++;
+            }
+//            else
+//                AS[idx] = val[k - 2];
+        }
+    }
+}
+
+
+
+double* MatrixELLPACK::multiplyELLPack(double* x) {
+    double* y = (double*) malloc(rows * sizeof(double));
+    double t, t0, t1, t2, t3;
+    int i, j, idx; // idx is the index of (i,j)
+
+    // We unroll to 4 to reduce the loading time
+#pragma omp parallel for shared(x,y,maxNZ, JA, AS,rows,cols) private(i,j,idx,t0, t1, t2)
+    for (i = 0;i < cols - cols % 4;i += 4) {
+        t0 = 0;
+        t1 = 0;
+        t2 = 0;
+        t3 = 0;
+
+        for (j = 0;j < maxNZ - maxNZ % 2;j += 2) {
+            t0 += AS[(i + 0)*maxNZ + j + 0] * x[JA[(i + 0)*maxNZ + j + 0]] + AS[(i + 0)*maxNZ + j + 1] * x[JA[(i + 0)*maxNZ + j + 1]];
+            t1 += AS[(i + 1)*maxNZ + j + 0] * x[JA[(i + 1)*maxNZ + j + 0]] + AS[(i + 1)*maxNZ + j + 1] * x[JA[(i + 1)*maxNZ + j + 1]];
+            t2 += AS[(i + 2)*maxNZ + j + 0] * x[JA[(i + 2)*maxNZ + j + 0]] + AS[(i + 2)*maxNZ + j + 1] * x[JA[(i + 2)*maxNZ + j + 1]];
+            t3 += AS[(i + 3)*maxNZ + j + 0] * x[JA[(i + 3)*maxNZ + j + 0]] + AS[(i + 3)*maxNZ + j + 1] * x[JA[(i + 3)*maxNZ + j + 1]];
+        }
+
+        for (j = maxNZ - maxNZ % 2;j < maxNZ;j++) {
+            t0 += AS[(i + 0)*maxNZ + j] * x[JA[(i + 0)*maxNZ + j]];
+            t1 += AS[(i + 1)*maxNZ + j] * x[JA[(i + 1)*maxNZ + j]];
+            t2 += AS[(i + 2)*maxNZ + j] * x[JA[(i + 2)*maxNZ + j]];
+            t3 += AS[(i + 3)*maxNZ + j] * x[JA[(i + 3)*maxNZ + j]];
+        }
+        y[i + 0] = t0;
+        y[i + 1] = t1;
+        y[i + 2] = t2;
+        y[i + 3] = t3;
+    }
+
+    for (i = rows - rows % 4;i < rows;i++) {
+        t = 0.0;
+        for (j = 0;j < maxNZ;j++) {
+            idx = i * maxNZ + j;
+            t += AS[idx] * x[JA[idx]];
+        }
+        y[i] = t;
+    }
+
+    return y;
+}

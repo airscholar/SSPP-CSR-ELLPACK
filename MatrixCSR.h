@@ -26,9 +26,9 @@ private:
     int *I;
     int *J;
     double *val;
-    vector<int> IRP;
-    vector<int> JA;
-    vector<double> AS;
+    int *IRP;
+    int *JA;
+    double *AS;
     unordered_map<pair<int, int>, double, hash_pair> matrixElements;
 
 public:
@@ -42,15 +42,23 @@ public:
 
     int getNZ();
 
-    vector<int> getIRP();
+    int *getIRP();
 
-    vector<int> getJA();
+    int *getJA();
 
-    vector<double> getAS();
+    double *getAS();
 
-    vector<int> serialMultiply(const vector<int> v);
+    void sortData();
 
-    vector<int> openMPMultiply(const vector<int> v);
+    void setJA(int nz, int *J);
+
+    void setAS(int nz, double *val);
+
+    void setIRP(int nz, int *I);
+
+    double *serialMultiply(int *IRP);
+
+    double *openMPMultiply(int *IRP);
 };
 
 
