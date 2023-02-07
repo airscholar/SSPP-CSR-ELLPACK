@@ -6,13 +6,14 @@
 #include "MatrixELLPACK.h"
 #include <omp.h>
 
-MatrixELLPACK::MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double *val) {
+MatrixELLPACK::MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double *val, double* x) {
     this->rows = rows;
     this->cols = cols;
     this->nz = nz;
     this->I = I;
     this->J = J;
     this->val = val;
+    this->x = x;
 
     this->maxNZ = getMaxNZ(nz, I);
 
@@ -25,23 +26,23 @@ MatrixELLPACK::MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double 
 
     setAS(val);
 
-    //print JA
-    printf("JA: \n");
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < maxNZ; j++) {
-            printf("%d ", this->getJA()[i * maxNZ + j] + 1);
-        }
-        printf("\n");
-    }
-
-    //print AS
-    printf("AS: \n");
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < maxNZ; j++) {
-            printf("%.2f ", this->getAS()[i * maxNZ + j]);
-        }
-        printf("\n");
-    }
+//    //print JA
+//    printf("JA: \n");
+//    for (int i = 0; i < rows; i++) {
+//        for (int j = 0; j < maxNZ; j++) {
+//            printf("%d ", this->getJA()[i * maxNZ + j] + 1);
+//        }
+//        printf("\n");
+//    }
+//
+//    //print AS
+//    printf("AS: \n");
+//    for (int i = 0; i < rows; i++) {
+//        for (int j = 0; j < maxNZ; j++) {
+//            printf("%.2f ", this->getAS()[i * maxNZ + j]);
+//        }
+//        printf("\n");
+//    }
 
 }
 
@@ -137,15 +138,12 @@ void MatrixELLPACK::setAS(double *val) {
     }
 }
 
-
-
 double* MatrixELLPACK::multiplyELLPack(double* x) {
     double* y = (double*) malloc(rows * sizeof(double));
     double t, t0, t1, t2, t3;
     int i, j, idx; // idx is the index of (i,j)
 
     // We unroll to 4 to reduce the loading time
-#pragma omp parallel for shared(x,y,maxNZ, JA, AS,rows,cols) private(i,j,idx,t0, t1, t2)
     for (i = 0;i < cols - cols % 4;i += 4) {
         t0 = 0;
         t1 = 0;
@@ -174,6 +172,54 @@ double* MatrixELLPACK::multiplyELLPack(double* x) {
     for (i = rows - rows % 4;i < rows;i++) {
         t = 0.0;
         for (j = 0;j < maxNZ;j++) {
+            idx = i * maxNZ + j;
+            t += AS[idx] * x[JA[idx]];
+        }
+        y[i] = t;
+    }
+
+    return y;
+}
+
+double* MatrixELLPACK::OMPMultiplyELLPack(double* x) {
+    double *y = (double *) malloc(rows * sizeof(double));
+    double t, t0, t1, t2, t3;
+    int i, j, idx; // idx is the index of (i,j)
+
+#pragma omp parallel for shared(x, y) private(t, t0, t1, t2, t3, i, j, idx)
+    for (i = 0; i < cols - cols % 4; i += 4) {
+        t0 = 0;
+        t1 = 0;
+        t2 = 0;
+        t3 = 0;
+
+        for (j = 0; j < maxNZ - maxNZ % 2; j += 2) {
+            t0 += AS[(i + 0) * maxNZ + j + 0] * x[JA[(i + 0) * maxNZ + j + 0]] +
+                  AS[(i + 0) * maxNZ + j + 1] * x[JA[(i + 0) * maxNZ + j + 1]];
+            t1 += AS[(i + 1) * maxNZ + j + 0] * x[JA[(i + 1) * maxNZ + j + 0]] +
+                  AS[(i + 1) * maxNZ + j + 1] * x[JA[(i + 1) * maxNZ + j + 1]];
+            t2 += AS[(i + 2) * maxNZ + j + 0] * x[JA[(i + 2) * maxNZ + j + 0]] +
+                  AS[(i + 2) * maxNZ + j + 1] * x[JA[(i + 2) * maxNZ + j + 1]];
+            t3 += AS[(i + 3) * maxNZ + j + 0] * x[JA[(i + 3) * maxNZ + j + 0]] +
+                  AS[(i + 3) * maxNZ + j + 1] * x[JA[(i + 3) * maxNZ + j + 1]];
+        }
+
+        for (j = maxNZ - maxNZ % 2; j < maxNZ; j++) {
+            t0 += AS[(i + 0) * maxNZ + j] * x[JA[(i + 0) * maxNZ + j]];
+            t1 += AS[(i + 1) * maxNZ + j] * x[JA[(i + 1) * maxNZ + j]];
+            t2 += AS[(i + 2) * maxNZ + j] * x[JA[(i + 2) * maxNZ + j]];
+            t3 += AS[(i + 3) * maxNZ + j] * x[JA[(i + 3) * maxNZ + j]];
+        }
+        y[i + 0] = t0;
+        y[i + 1] = t1;
+        y[i + 2] = t2;
+        y[i + 3] = t3;
+    }
+
+#pragma omp parallel for shared(x, y) private(t, i, j, idx)
+    for (i = rows - rows % 4; i < rows; i++) {
+        t = 0.0;
+        for (j = 0; j < maxNZ; j++) {
             idx = i * maxNZ + j;
             t += AS[idx] * x[JA[idx]];
         }

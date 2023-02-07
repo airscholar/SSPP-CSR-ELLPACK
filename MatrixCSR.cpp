@@ -5,13 +5,14 @@
 
 using namespace std;
 
-MatrixCSR::MatrixCSR(int M, int N, int nz, int *I, int *J, double *val) {
+MatrixCSR::MatrixCSR(int M, int N, int nz, int *I, int *J, double *val, double* x) {
     this->rows = M;
     this->cols = N;
     this->nz = nz;
     this->I = I;
     this->J = J;
     this->val = val;
+    this->x = x;
 
     //sort the data I, J, val
     sortData();
@@ -20,54 +21,29 @@ MatrixCSR::MatrixCSR(int M, int N, int nz, int *I, int *J, double *val) {
     setIRP(nz, I);
     // JA
     setJA(nz, J);
-
     // AS
     setAS(nz, val);
 
-    //print IRP
-    printf("IRP: ");
-    for (int i = 0; i < rows + 1; i++) {
-        printf("%d ", this->getIRP()[i] + 1);
-    }
-    printf("\n");
-
-    //print JA
-    printf("JA: ");
-    for (int i = 0; i < nz; i++) {
-        printf("%d ", this->getJA()[i] + 1);
-    }
-    printf("\n");
-
-    //print AS
-    printf("AS: ");
-    for (int i = 0; i < nz; i++) {
-        printf("%.2f ", this->getAS()[i]);
-    }
-    printf("\n");
-
-    // multiply
-    double *multRes = this->serialMultiply(this->getIRP());
-    double *openMPres = this->openMPMultiply(this->getIRP());
-
-    printf("Result: ");
-    for (int i = 0; i < this->rows; i++) {
-        printf("%.2f ", multRes[i]);
-    }
-    printf("\n");
-
-    printf("Parallel result: ");
-    for (int i = 0; i < this->rows; i++) {
-        printf("%.2f ", openMPres[i]);
-    }
-    printf("\n");
-
-    //find the difference
-    float diff = 0;
-    for (int i = 0; i < this->rows; i++) {
-        diff += abs((float) multRes[i] - (float) openMPres[i]);
-    }
-
-    printf("Validation result: %.9f\n", diff);
+//    //print IRP
+//    printf("IRP: ");
+//    for (int i = 0; i < rows + 1; i++) {
+//        printf("%d ", this->getIRP()[i] + 1);
+//    }
+//    printf("\n");
+//
+//    //print JA
+//    printf("JA: ");
+//    for (int i = 0; i < nz; i++) {
+//        printf("%d ", this->getJA()[i] + 1);
+//    }
+//    printf("\n");
+//
+//    //print AS
+//    printf("AS: ");
+//    for (int i = 0; i < nz; i++) {
+//        printf("%.2f ", this->getAS()[i]);
+//    }
+//    printf("\n");
 }
 
 void MatrixCSR::sortData() {
@@ -90,7 +66,7 @@ void MatrixCSR::sortData() {
 void MatrixCSR::setJA(int nz, int *J) {
     this->JA = new int[nz];
     for (int i = 0; i < nz; i++) {
-        JA[i] = J[i];
+        this->JA[i] = J[i];
     }
 }
 
@@ -110,12 +86,12 @@ void MatrixCSR::setIRP(int nz, int *I) {
 
     // We put the first values to zero if the first rows are empty
     while (I[0] + 1 != k) {
-        IRP[k - 1] = 0;
+        this->IRP[k - 1] = 0;
         k++;
     }
 
     // Now I[0]+1 == k
-    IRP[k - 1] = irp; // The first value is always zero in C
+    this->IRP[k - 1] = irp; // The first value is always zero in C
     k++;
     irp++;
 
@@ -123,18 +99,18 @@ void MatrixCSR::setIRP(int nz, int *I) {
     for (i = 2; i <= nz; i++) {
         // If we are on a new row, we can put a new value in IRP
         if (I[i - 1] == I[i - 2] + 1) {
-            IRP[k - 1] = irp;
+            this->IRP[k - 1] = irp;
             k++;
             irp++;
         } // We have skipped at least a row
         else if (I[i - 1] > I[i - 2] + 1) {
             // We need to input the previous value again as many times as there are skipped rows
             for (int skipped = 1; skipped <= I[i - 1] - I[i - 2] - 1; skipped++) {
-                IRP[k - 1] = irp;
+                this->IRP[k - 1] = irp;
                 k++;
             }
             // We also need to input the value corresponding to the new row
-            IRP[k - 1] = irp;
+            this->IRP[k - 1] = irp;
             k++;
             irp++;
         } else {
@@ -144,7 +120,7 @@ void MatrixCSR::setIRP(int nz, int *I) {
     }
 
     // The last value is the number of non zero values in C
-    IRP[rows] = nz;
+    this->IRP[rows] = nz;
 }
 
 int* MatrixCSR::getIRP() {
@@ -159,7 +135,7 @@ double* MatrixCSR::getAS() {
     return this->AS;
 }
 
-double* MatrixCSR::serialMultiply(int* v) {
+double* MatrixCSR::serialMultiply(double* v) {
     double* y = new double[rows];
     double t;
     int i, j;
@@ -174,29 +150,19 @@ double* MatrixCSR::serialMultiply(int* v) {
     return y;
 }
 
-double* MatrixCSR::openMPMultiply(int* x) {
-    double *y = new double[this->rows];
-    double temp;
+double* MatrixCSR::openMPMultiply(double* v) {
+    double* y = new double[rows];
+    double t;
     int i, j;
-    // We try to unroll to 4 if possible
-#pragma omp parallel for shared(x, IRP, JA, AS) private(i, j, temp)
-    for (int i = 0; i < rows; i++) {
-        temp = 0;
-        if (IRP[i + 1] - IRP[i] >= 4) {
-            for (int j = IRP[i]; j <= (IRP[i + 1] - 1) - (IRP[i + 1] - 1) % 4; j += 4) {
-                temp += AS[j] * x[JA[j]] + AS[j + 1] * x[JA[j + 1]] + AS[j + 2] * x[JA[j + 2]] +
-                        AS[j + 3] * x[JA[j + 3]];
+#pragma omp parallel for private(i, t, j) shared (y, v)
+    {
+        for (i = 0; i < rows; i++) {
+            t = 0;
+            for (j = IRP[i]; j < IRP[i + 1]; j++) {
+                t += AS[j] * v[JA[j]];
             }
-            for (int j = (IRP[i + 1] - 1) - (IRP[i + 1] - 1) % 4; j <= IRP[i + 1] - 1; j++) {
-                temp += AS[j] * x[JA[j]];
-            }
-        } else {
-            for (int j = IRP[i]; j <= IRP[i + 1] - 1; j++) {
-                temp += AS[j] * x[JA[j]];
-            }
+            y[i] = t;
         }
-        y[i] = temp;
-
     }
     return y;
 }

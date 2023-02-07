@@ -16,6 +16,7 @@ private:
     int nz;
     int *I;
     int *J;
+    double* x;
     double *val;
     int maxNZ;
 
@@ -23,7 +24,7 @@ private:
     int *JA;
     double *AS;
 public:
-    MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double *val);
+    MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double *val, double* x);
 
     int *getI();
 
@@ -49,7 +50,10 @@ public:
 
     void setAS(double *val);
 
-    double *multiplyELLPack(double *x);
+    double *multiplyELLPack(double* x);
+
+    double *OMPMultiplyELLPack(double *x);
+
 };
 
 

@@ -28,12 +28,12 @@ private:
     double *val;
     int *IRP;
     int *JA;
+    double* x;
     double *AS;
-    unordered_map<pair<int, int>, double, hash_pair> matrixElements;
 
 public:
     //constructor
-    MatrixCSR(int rows, int cols, int nz, int *I, int *J, double *val);
+    MatrixCSR(int rows, int cols, int nz, int *I, int *J, double *val, double* x);
 
     //methods
     int getRows();
@@ -56,9 +56,11 @@ public:
 
     void setIRP(int nz, int *I);
 
-    double *serialMultiply(int *IRP);
+    double* generateVector(int rows,  int cols);
 
-    double *openMPMultiply(int *IRP);
+    double *serialMultiply(double *IRP);
+
+    double *openMPMultiply(double *IRP);
 };
 
 
