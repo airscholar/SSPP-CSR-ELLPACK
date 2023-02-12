@@ -40,7 +40,13 @@ public:
 
     int getMaxNZ(int nz, int *I);
 
-    void sortData();
+    void swap(int &a, int &b);
+
+    void swap(double &a, double &b);
+
+    int partition(int I[], int J[], double val[], int low, int high);
+
+    void sortData(int I[], int J[], double val[], int low, int high);
 
     int *getJA();
 

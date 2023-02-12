@@ -14,18 +14,36 @@ MatrixELLPACK::MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double 
     this->J = J;
     this->val = val;
     this->x = x;
+
     this->maxNZ = getMaxNZ(nz, I);
 
-    printf("Starting conversion to ELLPACK\n");
-    //sort the data I, J, val
+    this->JA = (int *) malloc(rows * maxNZ * sizeof(int));
+    this->AS = (double *) malloc(rows * maxNZ * sizeof(double));
+
     sortData(I, J, val, 0, nz - 1);
-    printf("Data sorted\n");
 
     setJA(nz, I, J);
-    printf("JA set\n");
 
     setAS(val);
-    printf("AS set\n");
+
+//    //print JA
+//    printf("JA: \n");
+//    for (int i = 0; i < rows; i++) {
+//        for (int j = 0; j < maxNZ; j++) {
+//            printf("%d ", this->getJA()[i * maxNZ + j] + 1);
+//        }
+//        printf("\n");
+//    }
+//
+//    //print AS
+//    printf("AS: \n");
+//    for (int i = 0; i < rows; i++) {
+//        for (int j = 0; j < maxNZ; j++) {
+//            printf("%.2f ", this->getAS()[i * maxNZ + j]);
+//        }
+//        printf("\n");
+//    }
+
 }
 
 void MatrixELLPACK::swap(int &a, int &b) {
@@ -58,28 +76,10 @@ int MatrixELLPACK::partition(int I[], int J[], double val[], int low, int high) 
 }
 
 void MatrixELLPACK::sortData(int I[], int J[], double val[], int low, int high) {
-//    if (low < high) {
-//        int pivotIndex = partition(I, J, val, low, high);
-//        sortData(I, J, val, low, pivotIndex - 1);
-//        sortData(I, J, val, pivotIndex + 1, high);
-//    }
-    int i, j;
-    int temp;
-    double tempVal;
-    for (i = 0; i < nz - 1; ++i) {
-        for (j = 0; j < nz - 1 - i; ++j) {
-            if (I[j] > I[j + 1]) {
-                temp = I[j + 1];
-                I[j + 1] = I[j];
-                I[j] = temp;
-                temp = J[j + 1];
-                J[j + 1] = J[j];
-                J[j] = temp;
-                tempVal = val[j + 1];
-                val[j + 1] = val[j];
-                val[j] = tempVal;
-            }
-        }
+    if (low < high) {
+        int pivotIndex = partition(I, J, val, low, high);
+        sortData(I, J, val, low, pivotIndex - 1);
+        sortData(I, J, val, pivotIndex + 1, high);
     }
 }
 
@@ -484,8 +484,6 @@ double* MatrixELLPACK::OMPMultiplyELLPack(double* x) {
                    AS[(i + 15) * maxNZ + j + 13] * x[JA[(i + 15) * maxNZ + j + 13]] +
                    AS[(i + 15) * maxNZ + j + 14] * x[JA[(i + 15) * maxNZ + j + 14]] +
                    AS[(i + 15) * maxNZ + j + 15] * x[JA[(i + 15) * maxNZ + j + 15]];
-
-
         }
 
         for (j = maxNZ - maxNZ % 16; j < maxNZ; j++) {
@@ -525,7 +523,7 @@ double* MatrixELLPACK::OMPMultiplyELLPack(double* x) {
     }
 
 #pragma omp parallel for shared(x, y) private(t, i, j, idx)
-    for (i = rows - rows % 16; i < rows; i++) {
+    for (i = rows - rows % 8; i < rows; i++) {
         t = 0.0;
         for (j = 0; j < maxNZ; j++) {
             idx = i * maxNZ + j;

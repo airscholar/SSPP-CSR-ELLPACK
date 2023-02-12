@@ -14,15 +14,21 @@ MatrixCSR::MatrixCSR(int M, int N, int nz, int *I, int *J, double *val, double* 
     this->val = val;
     this->x = x;
 
+    printf("Starting conversion to CSR\n");
     //sort the data I, J, val
-    sortData();
+    sortData(I, J, val, 0, nz - 1);
+    printf("Data sorted\n");
 
+    //CONVERT TO CSR
     // IRP
-    setIRP(nz, I);
+    this->setIRP(nz, I);
+    printf("IRP set\n");
     // JA
     setJA(nz, J);
+    printf("JA set\n");
     // AS
     setAS(nz, val);
+    printf("AS set\n");
 
 //    //print IRP
 //    printf("IRP: ");
@@ -46,7 +52,42 @@ MatrixCSR::MatrixCSR(int M, int N, int nz, int *I, int *J, double *val, double* 
 //    printf("\n");
 }
 
-void MatrixCSR::sortData() {
+void MatrixCSR::swap(int &a, int &b) {
+    int temp = a;
+    a = b;
+    b = temp;
+}
+
+void MatrixCSR::swap(double &a, double &b) {
+    double temp = a;
+    a = b;
+    b = temp;
+}
+
+int MatrixCSR::partition(int I[], int J[], double val[], int low, int high) {
+    int pivotValue = I[high];
+    int i = low - 1;
+    for (int j = low; j <= high - 1; ++j) {
+        if (I[j] < pivotValue) {
+            ++i;
+            swap(I[i], I[j]);
+            swap(J[i], J[j]);
+            swap(val[i], val[j]);
+        }
+    }
+    swap(I[i + 1], I[high]);
+    swap(J[i + 1], J[high]);
+    swap(val[i + 1], val[high]);
+    return i + 1;
+}
+
+void MatrixCSR::sortData(int I[], int J[], double val[], int low, int high) {
+//    if (low < high) {
+//        int pivotIndex = partition(I, J, val, low, high);
+//        sortData(I, J, val, low, pivotIndex - 1);
+//        sortData(I, J, val, pivotIndex + 1, high);
+//    }
+//    printf("Data sorted %d %d\n", low, high);
     int i, j;
     for (i = 1; i < nz; i++) {
         int elem1 = I[i];
@@ -78,7 +119,7 @@ void MatrixCSR::setAS(int nz, double *val) {
 }
 
 void MatrixCSR::setIRP(int nz, int *I) {
-    this->IRP = new int[rows + 1];
+    this->IRP = new int[this->rows + 1];
     // Here we use I once it is reordered
     int k = 1; // k will be the current index+1 of the IRP array
     int i; // i will be the current index+1 of the I array
@@ -151,18 +192,34 @@ double* MatrixCSR::serialMultiply(double* v) {
 }
 
 double* MatrixCSR::openMPMultiply(double* v) {
-    double* y = new double[rows];
-    double t;
+    double *y = new double[rows];
+    double t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15;
     int i, j;
-#pragma omp parallel for private(i, t, j) shared (y, v)
-    {
-        for (i = 0; i < rows; i++) {
-            t = 0;
-            for (j = IRP[i]; j < IRP[i + 1]; j++) {
-                t += AS[j] * v[JA[j]];
-            }
-            y[i] = t;
+#pragma omp parallel for private(i, j, t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15) shared(y, v)
+    for (i = 0; i < rows; i++) {
+        t0 = 0, t1 = 0, t2 = 0, t3 = 0, t4 = 0, t5 = 0, t6 = 0, t7 = 0, t8 = 0, t9 = 0, t10 = 0, t11 = 0, t12 = 0, t13 = 0, t14 = 0, t15 = 0;
+        for (j = IRP[i]; j < IRP[i + 1] - 15; j += 16) {
+            t0 += AS[j] * v[JA[j]];
+            t1 += AS[j + 1] * v[JA[j + 1]];
+            t2 += AS[j + 2] * v[JA[j + 2]];
+            t3 += AS[j + 3] * v[JA[j + 3]];
+            t4 += AS[j + 4] * v[JA[j + 4]];
+            t5 += AS[j + 5] * v[JA[j + 5]];
+            t6 += AS[j + 6] * v[JA[j + 6]];
+            t7 += AS[j + 7] * v[JA[j + 7]];
+            t8 += AS[j + 8] * v[JA[j + 8]];
+            t9 += AS[j + 9] * v[JA[j + 9]];
+            t10 += AS[j + 10] * v[JA[j + 10]];
+            t11 += AS[j + 11] * v[JA[j + 11]];
+            t12 += AS[j + 12] * v[JA[j + 12]];
+            t13 += AS[j + 13] * v[JA[j + 13]];
+            t14 += AS[j + 14] * v[JA[j + 14]];
+            t15 += AS[j + 15] * v[JA[j + 15]];
         }
+        for (; j < IRP[i + 1]; j++) {
+            t0 += AS[j] * v[JA[j]];
+        }
+        y[i] = t0 + t1 + t2 + t3 + t4 + t5 + t6 + t7 + t8 + t9 + t10 + t11 + t12 + t13 + t14 + t15;
     }
     return y;
 }

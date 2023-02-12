@@ -48,7 +48,13 @@ public:
 
     double *getAS();
 
-    void sortData();
+    void swap(int &a, int &b);
+
+    void swap(double &a, double &b);
+
+    int partition(int I[], int J[], double val[], int low, int high);
+
+    void sortData(int I[], int J[], double val[], int low, int high);
 
     void setJA(int nz, int *J);
 
@@ -58,9 +64,9 @@ public:
 
     double* generateVector(int rows,  int cols);
 
-    double *serialMultiply(double *IRP);
+    double *serialMultiply(double *v);
 
-    double *openMPMultiply(double *IRP);
+    double *openMPMultiply(double *v);
 };
 
 

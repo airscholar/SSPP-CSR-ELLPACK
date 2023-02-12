@@ -7,11 +7,13 @@
 #include "MatrixELLPACK.h"
 #include "wtime.h"
 #include <map>
+#include <omp.h>
 
 using namespace std;
 
 inline double dmin ( double a, double b ) { return a < b ? a : b; }
 map<pair<int, int>, double> matrix; // use a map to store the values of I, J and V
+const int ntimes = 5;
 
 void readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, int &ret_code, MM_typecode &matcode, char *fileName) {
     FILE *f;
@@ -50,41 +52,34 @@ void readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, int &ret_
     /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
     /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
     int i;
+    char buffer[64];
     for (i = 0; i < nz; i++) {
-        fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i]);
+        if (fgets(buffer, 64, f) == NULL) {
+            break;
+        }
+        sscanf(buffer, "%d %d %lg", &I[i], &J[i], &val[i]);
         I[i]--;  /* adjust from 1-based to 0-based */
         J[i]--;
 
         matrix[make_pair(I[i], J[i])] = val[i];
-    }
 
-    if(mm_is_symmetric(matcode)) {
-        int *tempI = I;
-        int *tempJ = J;
-        double *tempVal = val;
-
-        for (i = nz / 2; i < nz; i++) {
-            if(tempI[i - nz / 2] == tempJ[i - nz / 2])
-                continue;
-
-            I[i] = tempJ[i - nz / 2];
-            J[i] = tempI[i - nz / 2];
-            val[i] = tempVal[i - nz / 2];
-
-            matrix[make_pair(I[i], J[i])] = val[i];
+        // if symmetric, add the other half when its not the diagonal
+        if (mm_is_symmetric(matcode) && I[i] != J[i]) {
+            matrix[make_pair(J[i], I[i])] = val[i];
         }
     }
 
     if (f != stdin) fclose(f);
 }
 
-double printMatrix(int M, int N){
+void printMatrix(int M, int N){
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < N; j++) {
-            if (matrix.count(make_pair(i, j))) {
-                printf("%.2f\t", matrix[make_pair(i, j)]);
+            if (matrix.count(make_pair(i, j)) || matrix.count(make_pair(j, i))) {
+                printf("0 ");
+//                printf("%.2f\t", matrix[make_pair(i, j)]);
             } else {
-                printf("0\t\t");
+                printf("X ");
             }
         }
         printf("\n");
@@ -121,74 +116,65 @@ int main(int argc, char *argv[]) {
 
     printf("Dimensions: %d x %d, Non-zero elements: %d\n", M, N, nz);
 
-    printMatrix(M, N);
+//    printMatrix(M, N);
 
     //generate X vector
-    double* x = generateVector(M);
+    double *x = generateVector(M);
 
     //get start time
-    double tmlt = 1e100;
-    double t1 = wtime();
     printf("=====================================\n");
     MatrixCSR csr(M, N, nz, I, J, val, x);
     // multiply
-    double *multRes = csr.serialMultiply(x);
-    double *openMPres = csr.openMPMultiply(x);
-
-//    printf("Serial Result:\t\t\t");
+    double tmlt = 1e100;
+    double *ompCSRresult = 0;
+    for (int tr = 0; tr < ntimes; tr++) {
+        double t1 = wtime();
+        ompCSRresult = csr.openMPMultiply(x);
+        double t2 = wtime();
+        tmlt = dmin(tmlt, (t2 - t1));
+    }
+    double mflops = (2.0e-6) * nz / tmlt;
+    printf("CSR %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
+//    //print csr result
+//    printf("CSR Result:\t\t");
 //    for (int i = 0; i < M; i++) {
-//        printf("%.2f ", multRes[i]);
+//        printf("%.2f ", ompCSRresult[i]);
 //    }
 //    printf("\n");
-//    printf("CSR OpenMP result:\t\t");
+
+    MatrixELLPACK ellpack(M, N, nz, I, J, val, x);
+
+    tmlt = 1e100;
+    double *ompEllpackResult = 0;
+    for (int tr = 0; tr < ntimes; tr++) {
+        double t1 = wtime();
+        ompEllpackResult = ellpack.OMPMultiplyELLPack(x);
+        double t2 = wtime();
+        tmlt = dmin(tmlt, (t2 - t1));
+    }
+    mflops = (2.0e-6) * nz / tmlt;
+    printf("ELLPACK %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
+//    //print ELLPACK result
+//    printf("ELLPACK Result:\t");
 //    for (int i = 0; i < M; i++) {
-//        printf("%.2f ", openMPres[i]);
+//        printf("%.2f ", ompEllpackResult[i]);
 //    }
 //    printf("\n");
 
     //find the difference
     float diff = 0;
     for (int i = 0; i < M; i++) {
-        diff += abs((float) multRes[i] - (float) openMPres[i]);
+        diff += abs((float) ompCSRresult[i] - (float) ompEllpackResult[i]);
     }
 
-    printf("CSR Validation:\t\t\t%.9f\n", diff);
-    double t2 = wtime();
-    tmlt = dmin(tmlt, (t2 - t1));
-
-    double time = t2 - t1;
-    double mflops = ((2.0e-6) * M * N / tmlt);//*0.001;
-    printf("Multiplying matrices of size %d x %d: time %lf  MFLOPS %lf \n", M, N, time, mflops);
-
-    t1 = wtime();
-    MatrixELLPACK ellpack(M, N, nz, I, J, val, x);
-    //serial multiply
-    double* elPackResult = ellpack.multiplyELLPack(x);
-    double* ompElpackResult = ellpack.OMPMultiplyELLPack(x);
-    t2 = wtime();
-    tmlt = dmin(tmlt, (t2 - t1));
-
-    time = t2-t1;
-    mflops = ((2.0e-6) * M * N / tmlt);//*0.001;
-//    printf("ELLPACK Result:\t\t\t");
-//    for (int i = 0; i < M; i++) {
-//        printf("%.2f ", elPackResult[i]);
-//    }
-//    printf("\n");
-//    printf("ELLPACK OMP Result:\t\t");
-//    for (int i = 0; i < M; i++) {
-//        printf("%.2f ", ompElpackResult[i]);
-//    }
-//    printf("\n");
-
-    //find the difference
-    float ellPackdiff = 0;
-    for (int i = 0; i < M; i++) {
-        ellPackdiff += abs((float) elPackResult[i] - (float) ompElpackResult[i]);
+    printf("Validation:\t\t%.9f\n", diff);
+#pragma omp parallel
+    {
+#pragma omp master
+        {
+            printf("Computed results using %d threads\n", omp_get_num_threads());
+        };
     }
-
-    printf("ELLPACK Validation:\t\t%.9f\n", ellPackdiff);
-    printf("Multiplying matrices of size %d x %d: time %lf  MFLOPS %lf \n", M, N, time, mflops);
     printf("=====================================\n");
 
     //free memory
