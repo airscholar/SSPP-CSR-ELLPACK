@@ -3,6 +3,7 @@
 #include "mmio.h"
 //#include "smallscale.h"
 #include <utility>
+#include "MatrixBase.h"
 #include "MatrixCSR.h"
 #include "MatrixELLPACK.h"
 #include "wtime.h"
@@ -13,7 +14,8 @@ using namespace std;
 
 inline double dmin ( double a, double b ) { return a < b ? a : b; }
 map<pair<int, int>, double> matrix; // use a map to store the values of I, J and V
-const int ntimes = 5;
+const int ntimes = 99;
+
 
 void readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, int &ret_code, MM_typecode &matcode, char *fileName) {
     FILE *f;
@@ -41,9 +43,9 @@ void readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, int &ret_
 
     /* reseve memory for matrices */
 
-    if (mm_is_symmetric(matcode)) {
-        nz = nz * 2;
-    }
+//    if (mm_is_symmetric(matcode)) {
+//        nz = nz * 2;
+//    }
     I = (int *) malloc(nz * sizeof(int)); // row
     J = (int *) malloc(nz * sizeof(int)); // col
     val = (double *) malloc(nz * sizeof(double));
@@ -52,30 +54,56 @@ void readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, int &ret_
     /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
     /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
     int i;
-    char buffer[64];
+
+    //read data
+    mm_read_mtx_crd_data(f, M, N, nz, I, J, val, matcode);
+
+    int* tempI = (int *) malloc(nz * sizeof(int)); // row
+    int* tempJ = (int *) malloc(nz * sizeof(int)); // col
+    double* tempVal = (double *) malloc(nz * sizeof(double));
+
+    //read data into temp
+    for (i = 0; i < nz; i++) {
+        tempI[i] = I[i];
+        tempJ[i] = J[i];
+        tempVal[i] = val[i];
+    }
+
     int diagonal = 0;
     for (i = 0; i < nz; i++) {
-        if (fgets(buffer, 64, f) == NULL) {
-            break;
-        }
-        sscanf(buffer, "%d %d %lg", &I[i], &J[i], &val[i]);
-        I[i]--;  /* adjust from 1-based to 0-based */
-        J[i]--;
-
-        matrix[make_pair(I[i], J[i])] = val[i];
-
-        if(I[i] == J[i]){
+        if (tempI[i] == tempJ[i]) {
             diagonal++;
         }
+    }
 
-        if (mm_is_symmetric(matcode) && I[i] != J[i]) {
-        // if symmetric, add the other half when its not the diagonal
-            matrix[make_pair(J[i], I[i])] = val[i];
+    //read data into symmetrical matrix
+    if (mm_is_symmetric(matcode)) {
+        int oldNz = nz;
+        nz = nz * 2 - diagonal;
+        I = (int *) realloc(I, nz * sizeof(int)); // row
+        J = (int *) realloc(J, nz * sizeof(int)); // col
+        val = (double *) realloc(val, nz * sizeof(double));
+
+        int k = 0;
+        for (i = 0; i < oldNz; i++) {
+            I[k] = tempI[i];
+            J[k] = tempJ[i];
+            val[k] = tempVal[i];
+            k++;
+            if (tempI[i] != tempJ[i]) {
+                I[k] = tempJ[i];
+                J[k] = tempI[i];
+                val[k] = tempVal[i];
+                k++;
+            }
         }
     }
-    if(mm_is_symmetric(matcode)) {
-        nz = nz - diagonal;
+
+    //read data into map
+    for (i = 0; i < nz; i++) {
+        matrix[make_pair(I[i], J[i])] = val[i];
     }
+
 
     if (f != stdin) fclose(f);
 }
@@ -101,8 +129,8 @@ double* generateVector(int rows){
 
 //    srand(12345);
     for (row = 0; row < rows; row++) {
-        A[row] = 100.0f * ((double) rand()) / RAND_MAX;
-//        A[row] = 0.001;
+//        A[row] = 100.0f * ((double) rand()) / RAND_MAX;
+        A[row] = 1;
     }
 
     return A;
@@ -133,102 +161,123 @@ int main(int argc, char *argv[]) {
     printf("=====================================\n");
     double *y = new double[M];
 
-    MatrixCSR csr(M, N, nz, I, J, val, x);
+    MatrixCSR matrixCSR(M, N, nz, I, J, val, x);
 
 //    //print IRP
-//    printf("IRP:\t\t\t");
+//    printf("IRP:\t");
 //    for (int i = 0; i < M; i++) {
-//        printf("%d ", csr.getIRP()[i]);
+//        printf("%d ", matrixCSR.getIRP()[i]);
 //    }
 //    printf("\n");
-//    //print JA
-//    printf("JA:\t\t\t");
+////    print JA
+//    printf("JA:\t\t");
 //    for (int i = 0; i < nz; i++) {
-//        printf("%d ", csr.getJA()[i]);
+//        printf("%d ", matrixCSR.getJA()[i]);
 //    }
 //    printf("\n");
 //    //print AS
-//    printf("AS:\t\t\t");
+//    printf("AS:\t\t");
 //    for (int i = 0; i < nz; i++) {
-//        printf("%.2f ", csr.getAS()[i]);
+//        printf("%.2f ", matrixCSR.getAS()[i]);
 //    }
 //    printf("\n");
 
     printf("Multiplying matrix by vector...\n");
-    // multiply
+//    // multiply
     double tmlt = 1e100;
     double *serialCSRResult = 0;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
-        serialCSRResult = csr.serialMultiply(x, y);
+        serialCSRResult = matrixCSR.serialMultiply(x, y);
         double t2 = wtime();
         tmlt = dmin(tmlt, (t2 - t1));
     }
-    double mflops = 2.0 * nz / tmlt * 1e-6;
-    printf("Serial CSR %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
 
+    double gflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    printf("Serial CSR %d x %d: time %lf  GFLOPS: %f \n", M, N, tmlt, gflops);
+//
     tmlt = 1e100;
     double *ompCSRresult = 0;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
-        ompCSRresult = csr.openMPMultiply(x, y);
+        ompCSRresult = matrixCSR.openMPMultiply(x, y);
         double t2 = wtime();
         tmlt = dmin(tmlt, (t2 - t1));
     }
-    mflops = 2.0 * nz / tmlt * 1e-6;
-    printf("OMP CSR %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
+
+    gflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    printf("OMP CSR %d x %d: time %lf  GFLOPS: %f \n", M, N, tmlt, gflops);
 
     //validate result
     float diff = 0;
     for (int i = 0; i < M; i++) {
         float err = ompCSRresult[i] - serialCSRResult[i];
-        if(err < 0) err = -err;
+        if (err < 0) err = -err;
 
         diff += err;
     }
     printf("Error: %f \n", diff);
 
-    //print csr result
-//    printf("CSR Result:\t\t");
+
+////    print csr result
+//    printf("CSR Result:\t");
 //    for (int i = 0; i < M; i++) {
 //        printf("%.2f ", ompCSRresult[i]);
 //    }
 //    printf("\n");
 //    return 0;
+
     MatrixELLPACK ellpack(M, N, nz, I, J, val, x);
+
+    //print JA 2D array
+//    printf("JA:\n");
+//    std::vector<std::vector<int>> ja = ellpack.getJA();
+//    for (int i = 0; i < ja.size(); i++) {
+//        for (int j = 0; j < ja[i].size(); j++) {
+//            printf("%d ", ja[i][j]);
+//        }
+//        printf("\n");
+//    }
+//    printf("\n");
+//    //print AS
+//    printf("AS:\t\t");
+//    for (int i = 0; i < nz; i++) {
+//        printf("%.2f ", ellpack.getAS()[i]);
+//    }
+//    printf("\n");
 //
     tmlt = 1e100;
     double *serialEllPackResult = 0;
     for (int tr = 0; tr < ntimes; tr++) {
-        double t1 = wtime();
-        serialEllPackResult = ellpack.multiplyELLPack(x, y);
+        long double t1 = wtime();
+        serialEllPackResult = ellpack.serialMultiply(x, y);
         double t2 = wtime();
         tmlt = dmin(tmlt, (t2 - t1));
     }
-    mflops = 2.0 * nz / tmlt * 1e-6;
-    printf("Serial ELLPACK %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
+    gflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    printf("Serial ELLPACK %d x %d: time %lf  GFLOPS: %f \n", M, N, tmlt, gflops);
 
     tmlt = 1e100;
     double *ompELLPackresult = 0;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
-        ompELLPackresult = ellpack.OMPMultiplyELLPack(x, y);
+        ompELLPackresult = ellpack.openMPMultiply(x, y);
         double t2 = wtime();
         tmlt = dmin(tmlt, (t2 - t1));
     }
-    mflops = 2.0 * nz / tmlt * 1e-6;
-    printf("OMP ELLPACK %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
+    gflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    printf("OMP ELLPACK %d x %d: time %lf  GFLOPS: %f \n", M, N, tmlt, gflops);
 
     //validate result
-    diff = 0;
+     diff = 0;
     for (int i = 0; i < M; i++) {
         float err = serialEllPackResult[i] - ompELLPackresult[i];
-        if(err < 0) err = -err;
+        if (err < 0) err = -err;
 
         diff += err;
     }
     printf("Error: %f \n", diff);
-//
+
 //    printf("Validation:\t\t%.9f\n", diff);
 #pragma omp parallel
     {
@@ -239,10 +288,13 @@ int main(int argc, char *argv[]) {
     }
     printf("=====================================\n");
 
-    //free memory
+
+    //clean up
     free(I);
     free(J);
     free(val);
+    free(x);
+    free(y);
 
     return 0;
 }

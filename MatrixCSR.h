@@ -8,67 +8,65 @@
 #include <cstdio>
 #include <cstdlib>
 #include "mmio.h"
-//#include "smallscale.h"
 #include <iostream>
 #include <string>
 #include <vector>
 #include <utility>
 #include <unordered_map>
+#include <algorithm>
+#include "MatrixBase.h"
 
 using namespace std;
 
-class MatrixCSR {
-
-private:
+class MatrixCSR : public MatrixBase {
     int rows;
     int cols;
     int nz;
     int *I;
     int *J;
     double *val;
-    int *IRP;
-    int *JA;
-    double* x;
-    double *AS;
+    int *IRP{};
+    int *JA{};
+    double *x;
+    double *AS{};
 
 public:
-    //constructor
-    MatrixCSR(int rows, int cols, int nz, int *I, int *J, double *val, double* x);
+    MatrixCSR(int rows, int cols, int nz, int *I, int *J, double *val, double *x) : MatrixBase(rows, cols, nz, I, J,
+                                                                                               val, x) {
+        this->rows = rows;
+        this->cols = cols;
+        this->nz = nz;
+        this->I = I;
+        this->J = J;
+        this->val = val;
+        this->x = x;
 
-    //methods
-    int getRows();
+        this->IRP = new int[rows + 1];
+        this->JA = new int[nz];
+        this->AS = new double[nz];
 
-    int getCols();
+        this->setIRP(nz, I);
+        this->setJA(nz, I,  J);
+        this->setAS(nz, val);
 
-    int getNZ();
+        this->sortData(I, J, val, nz);
+    }
 
-    int *getIRP();
+    double *serialMultiply(double *x, double *y) override;
 
-    int *getJA();
+    double *openMPMultiply(double *x, double *y) override;
 
-    double *getAS();
+    void setIRP(int nz, int *I) ;
 
-    void swap(int &a, int &b);
+    void setJA(int nz, int*I, int *J) ;
 
-    void swap(double &a, double &b);
+    void setAS(int nz, double *val) ;
 
-    int partition(int I[], int J[], double val[], int low, int high);
+    int *getIRP() ;
 
-//    void sortData();
-    void sortData(int I[], int J[], double val[], int low, int high);
+    int *getJA() ;
 
-    void setJA(int nz, int *J);
-
-    void setAS(int nz, double *val);
-
-    void setIRP(int nz, int *I);
-
-    double* generateVector(int rows,  int cols);
-
-    double *serialMultiply(double *v, double* y);
-
-    double *openMPMultiply(double *v, double* y);
+    double *getAS() ;
 };
-
 
 #endif //SMALLSCALE_MATRIXCSR_H

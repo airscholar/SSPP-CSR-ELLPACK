@@ -46,6 +46,12 @@ cmake_ninja_workdir = /Users/airscholar/CLionProjects/SmallScale/cmake-build-deb
 
 build cmake_object_order_depends_target_SmallScale: phony || CMakeFiles/SmallScale.dir
 
+build CMakeFiles/SmallScale.dir/MatrixBase.cpp.o: CXX_COMPILER__SmallScale_Debug /Users/airscholar/CLionProjects/SmallScale/MatrixBase.cpp || cmake_object_order_depends_target_SmallScale
+  DEP_FILE = CMakeFiles/SmallScale.dir/MatrixBase.cpp.o.d
+  FLAGS = -fopenmp -O4 -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -fcolor-diagnostics -std=gnu++17
+  OBJECT_DIR = CMakeFiles/SmallScale.dir
+  OBJECT_FILE_DIR = CMakeFiles/SmallScale.dir
+
 build CMakeFiles/SmallScale.dir/main.cpp.o: CXX_COMPILER__SmallScale_Debug /Users/airscholar/CLionProjects/SmallScale/main.cpp || cmake_object_order_depends_target_SmallScale
   DEP_FILE = CMakeFiles/SmallScale.dir/main.cpp.o.d
   FLAGS = -fopenmp -O4 -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -fcolor-diagnostics -std=gnu++17
@@ -84,7 +90,7 @@ build CMakeFiles/SmallScale.dir/wtime.cpp.o: CXX_COMPILER__SmallScale_Debug /Use
 #############################################
 # Link the executable SmallScale
 
-build SmallScale: CXX_EXECUTABLE_LINKER__SmallScale_Debug CMakeFiles/SmallScale.dir/main.cpp.o CMakeFiles/SmallScale.dir/mmio.cpp.o CMakeFiles/SmallScale.dir/MatrixCSR.cpp.o CMakeFiles/SmallScale.dir/MatrixELLPACK.cpp.o CMakeFiles/SmallScale.dir/wtime.cpp.o
+build SmallScale: CXX_EXECUTABLE_LINKER__SmallScale_Debug CMakeFiles/SmallScale.dir/MatrixBase.cpp.o CMakeFiles/SmallScale.dir/main.cpp.o CMakeFiles/SmallScale.dir/mmio.cpp.o CMakeFiles/SmallScale.dir/MatrixCSR.cpp.o CMakeFiles/SmallScale.dir/MatrixELLPACK.cpp.o CMakeFiles/SmallScale.dir/wtime.cpp.o
   FLAGS = -fopenmp -O4 -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk
   LINK_PATH = -L/opt/homebrew/opt/llvm/lib
   OBJECT_DIR = CMakeFiles/SmallScale.dir

@@ -8,57 +8,57 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+#include "MatrixBase.h"
 
-class MatrixELLPACK {
+class MatrixELLPACK: public MatrixBase{
 private:
     int rows;
     int cols;
     int nz;
+    int maxNZ;
     int *I;
     int *J;
-    double *x;
     double *val;
-    int maxNZ;
+    int *IRP{};
+    //declare JA as a multidimensioanl array
+    std::vector<std::vector<int>> JA;
+    double *x;
+    double *AS{};
 
-    int *IRP;
-    int *JA;
-    double *AS;
 public:
-    MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double *val, double *x);
+    MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double *val, double *x): MatrixBase(rows, cols, nz,  I, J, val, x) {
+        this->rows = rows;
+        this->cols = cols;
+        this->nz = nz;
+        this->I = I;
+        this->J = J;
+        this->val = val;
+        this->x = x;
 
-    int *getI();
+        this->maxNZ = getMaxNZ(nz, I);
+        this->JA = std::vector<std::vector<int>>(rows, std::vector<int>(maxNZ, 0));
+        this->AS = new double[nz];
 
-    int *getJ();
+        this->setJA(nz, I, J);
+        this->setAS(maxNZ, val);
 
-    double *getVal();
+        this->sortData(I, J, val, nz);
 
-    int getRows();
-
-    int getCols();
-
-    int getNZ();
+    }
 
     int getMaxNZ(int nz, int *I);
 
-    void swap(int &a, int &b);
-
-    void swap(double &a, double &b);
-
-    int partition(int I[], int J[], double val[], int low, int high);
-
-    void sortData(int I[], int J[], double val[], int low, int high);
-
-    int *getJA();
+    double *getAS();
 
     void setJA(int nz, int *I, int *J);
 
-    double *getAS();
+    std::vector<std::vector<int>> getJA();
 
-    void setAS(double *val);
+    void setAS(int nz, double *val);
 
-    double *multiplyELLPack(double *x, double *y);
+    double *serialMultiply(double *x, double *y) override;
 
-    double *OMPMultiplyELLPack(double *x, double *y);
+    double *openMPMultiply(double *x, double *y) override;
 
 };
 
