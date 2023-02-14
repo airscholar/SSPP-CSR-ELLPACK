@@ -11,6 +11,6 @@ set(OPENMP_INCLUDES "/opt/homebrew/opt/llvm/include")
 set(OPENMP_LIBRARIES "/opt/homebrew/opt/llvm/lib")
 link_directories(${OPENMP_LIBRARIES})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -O4")
 
-add_executable(SmallScale main.cpp mmio.cpp MatrixCSR.cpp MatrixELLPACK.cpp wtime.cpp)
+add_executable(SmallScale main.cpp mmio.cpp MatrixCSR.cpp MatrixELLPACK.cpp wtime.cpp MatrixCSR.cu)

@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "mmio.h"
-#include "smallscale.h"
+//#include "smallscale.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -54,6 +54,7 @@ public:
 
     int partition(int I[], int J[], double val[], int low, int high);
 
+//    void sortData();
     void sortData(int I[], int J[], double val[], int low, int high);
 
     void setJA(int nz, int *J);
@@ -64,9 +65,9 @@ public:
 
     double* generateVector(int rows,  int cols);
 
-    double *serialMultiply(double *v);
+    double *serialMultiply(double *v, double* y);
 
-    double *openMPMultiply(double *v);
+    double *openMPMultiply(double *v, double* y);
 };
 
 

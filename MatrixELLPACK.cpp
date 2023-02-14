@@ -1,7 +1,7 @@
 //
 // Created by Yusuf Ganiyu on 2/5/23.
 //
-#include "smallscale.h"
+//#include "smallscale.h"
 #include <vector>
 #include "MatrixELLPACK.h"
 #include <omp.h>
@@ -16,16 +16,16 @@ MatrixELLPACK::MatrixELLPACK(int rows, int cols, int nz, int *I, int *J, double 
     this->x = x;
     this->maxNZ = getMaxNZ(nz, I);
 
-    printf("Starting conversion to ELLPACK\n");
+//    printf("Starting conversion to ELLPACK\n");
     //sort the data I, J, val
-    sortData(I, J, val, 0, nz - 1);
-    printf("Data sorted\n");
+//    sortData(I, J, val, 0, nz - 1);
+//    printf("Data sorted\n");
 
     setJA(nz, I, J);
-    printf("JA set\n");
+//    printf("JA set\n");
 
     setAS(val);
-    printf("AS set\n");
+//    printf("AS set\n");
 }
 
 void MatrixELLPACK::swap(int &a, int &b) {
@@ -175,51 +175,22 @@ void MatrixELLPACK::setAS(double *val) {
     }
 }
 
-double* MatrixELLPACK::multiplyELLPack(double* x) {
-    double* y = (double*) malloc(rows * sizeof(double));
-    double t, t0, t1, t2, t3;
+double* MatrixELLPACK::multiplyELLPack(double* x, double *y) {
+    double t;
     int i, j, idx; // idx is the index of (i,j)
-
-    // We unroll to 4 to reduce the loading time
-    for (i = 0;i < cols - cols % 4;i += 4) {
-        t0 = 0;
-        t1 = 0;
-        t2 = 0;
-        t3 = 0;
-
-        for (j = 0;j < maxNZ - maxNZ % 2;j += 2) {
-            t0 += AS[(i + 0)*maxNZ + j + 0] * x[JA[(i + 0)*maxNZ + j + 0]] + AS[(i + 0)*maxNZ + j + 1] * x[JA[(i + 0)*maxNZ + j + 1]];
-            t1 += AS[(i + 1)*maxNZ + j + 0] * x[JA[(i + 1)*maxNZ + j + 0]] + AS[(i + 1)*maxNZ + j + 1] * x[JA[(i + 1)*maxNZ + j + 1]];
-            t2 += AS[(i + 2)*maxNZ + j + 0] * x[JA[(i + 2)*maxNZ + j + 0]] + AS[(i + 2)*maxNZ + j + 1] * x[JA[(i + 2)*maxNZ + j + 1]];
-            t3 += AS[(i + 3)*maxNZ + j + 0] * x[JA[(i + 3)*maxNZ + j + 0]] + AS[(i + 3)*maxNZ + j + 1] * x[JA[(i + 3)*maxNZ + j + 1]];
-        }
-
-        for (j = maxNZ - maxNZ % 2;j < maxNZ;j++) {
-            t0 += AS[(i + 0)*maxNZ + j] * x[JA[(i + 0)*maxNZ + j]];
-            t1 += AS[(i + 1)*maxNZ + j] * x[JA[(i + 1)*maxNZ + j]];
-            t2 += AS[(i + 2)*maxNZ + j] * x[JA[(i + 2)*maxNZ + j]];
-            t3 += AS[(i + 3)*maxNZ + j] * x[JA[(i + 3)*maxNZ + j]];
-        }
-        y[i + 0] = t0;
-        y[i + 1] = t1;
-        y[i + 2] = t2;
-        y[i + 3] = t3;
-    }
-
-    for (i = rows - rows % 4;i < rows;i++) {
-        t = 0.0;
-        for (j = 0;j < maxNZ;j++) {
+#pragma omp parallel for shared(x, y) private(t, i, j, idx)
+    for (i = 0; i < rows; i++) {
+        t = 0;
+        for (j = 0; j < maxNZ; j++) {
             idx = i * maxNZ + j;
             t += AS[idx] * x[JA[idx]];
         }
         y[i] = t;
     }
-
     return y;
 }
 
-double* MatrixELLPACK::OMPMultiplyELLPack(double* x) {
-    double *y = (double *) malloc(rows * sizeof(double));
+double* MatrixELLPACK::OMPMultiplyELLPack(double* x, double *y) {
     double t, t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15;
     int i, j, idx; // idx is the index of (i,j)
 

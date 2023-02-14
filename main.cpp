@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "mmio.h"
-#include "smallscale.h"
+//#include "smallscale.h"
 #include <utility>
 #include "MatrixCSR.h"
 #include "MatrixELLPACK.h"
@@ -53,6 +53,7 @@ void readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, int &ret_
     /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
     int i;
     char buffer[64];
+    int diagonal = 0;
     for (i = 0; i < nz; i++) {
         if (fgets(buffer, 64, f) == NULL) {
             break;
@@ -63,10 +64,17 @@ void readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, int &ret_
 
         matrix[make_pair(I[i], J[i])] = val[i];
 
-        // if symmetric, add the other half when its not the diagonal
+        if(I[i] == J[i]){
+            diagonal++;
+        }
+
         if (mm_is_symmetric(matcode) && I[i] != J[i]) {
+        // if symmetric, add the other half when its not the diagonal
             matrix[make_pair(J[i], I[i])] = val[i];
         }
+    }
+    if(mm_is_symmetric(matcode)) {
+        nz = nz - diagonal;
     }
 
     if (f != stdin) fclose(f);
@@ -91,9 +99,10 @@ double* generateVector(int rows){
 
     int row;
 
-    srand(12345);
+//    srand(12345);
     for (row = 0; row < rows; row++) {
         A[row] = 100.0f * ((double) rand()) / RAND_MAX;
+//        A[row] = 0.001;
     }
 
     return A;
@@ -120,54 +129,107 @@ int main(int argc, char *argv[]) {
 
     //generate X vector
     double *x = generateVector(M);
-
     //get start time
     printf("=====================================\n");
+    double *y = new double[M];
+
     MatrixCSR csr(M, N, nz, I, J, val, x);
+
+//    //print IRP
+//    printf("IRP:\t\t\t");
+//    for (int i = 0; i < M; i++) {
+//        printf("%d ", csr.getIRP()[i]);
+//    }
+//    printf("\n");
+//    //print JA
+//    printf("JA:\t\t\t");
+//    for (int i = 0; i < nz; i++) {
+//        printf("%d ", csr.getJA()[i]);
+//    }
+//    printf("\n");
+//    //print AS
+//    printf("AS:\t\t\t");
+//    for (int i = 0; i < nz; i++) {
+//        printf("%.2f ", csr.getAS()[i]);
+//    }
+//    printf("\n");
+
+    printf("Multiplying matrix by vector...\n");
     // multiply
     double tmlt = 1e100;
-    double *ompCSRresult = 0;
+    double *serialCSRResult = 0;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
-        ompCSRresult = csr.openMPMultiply(x);
+        serialCSRResult = csr.serialMultiply(x, y);
         double t2 = wtime();
         tmlt = dmin(tmlt, (t2 - t1));
     }
-    double mflops = (2.0e-6) * nz / tmlt;
-    printf("CSR %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
-//    //print csr result
+    double mflops = 2.0 * nz / tmlt * 1e-6;
+    printf("Serial CSR %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
+
+    tmlt = 1e100;
+    double *ompCSRresult = 0;
+    for (int tr = 0; tr < ntimes; tr++) {
+        double t1 = wtime();
+        ompCSRresult = csr.openMPMultiply(x, y);
+        double t2 = wtime();
+        tmlt = dmin(tmlt, (t2 - t1));
+    }
+    mflops = 2.0 * nz / tmlt * 1e-6;
+    printf("OMP CSR %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
+
+    //validate result
+    float diff = 0;
+    for (int i = 0; i < M; i++) {
+        float err = ompCSRresult[i] - serialCSRResult[i];
+        if(err < 0) err = -err;
+
+        diff += err;
+    }
+    printf("Error: %f \n", diff);
+
+    //print csr result
 //    printf("CSR Result:\t\t");
 //    for (int i = 0; i < M; i++) {
 //        printf("%.2f ", ompCSRresult[i]);
 //    }
 //    printf("\n");
-
+//    return 0;
     MatrixELLPACK ellpack(M, N, nz, I, J, val, x);
-
+//
     tmlt = 1e100;
-    double *ompEllpackResult = 0;
+    double *serialEllPackResult = 0;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
-        ompEllpackResult = ellpack.OMPMultiplyELLPack(x);
+        serialEllPackResult = ellpack.multiplyELLPack(x, y);
         double t2 = wtime();
         tmlt = dmin(tmlt, (t2 - t1));
     }
-    mflops = (2.0e-6) * nz / tmlt;
-    printf("ELLPACK %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
-//    //print ELLPACK result
-//    printf("ELLPACK Result:\t");
-//    for (int i = 0; i < M; i++) {
-//        printf("%.2f ", ompEllpackResult[i]);
-//    }
-//    printf("\n");
+    mflops = 2.0 * nz / tmlt * 1e-6;
+    printf("Serial ELLPACK %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
 
-    //find the difference
-    float diff = 0;
-    for (int i = 0; i < M; i++) {
-        diff += abs((float) ompCSRresult[i] - (float) ompEllpackResult[i]);
+    tmlt = 1e100;
+    double *ompELLPackresult = 0;
+    for (int tr = 0; tr < ntimes; tr++) {
+        double t1 = wtime();
+        ompELLPackresult = ellpack.OMPMultiplyELLPack(x, y);
+        double t2 = wtime();
+        tmlt = dmin(tmlt, (t2 - t1));
     }
+    mflops = 2.0 * nz / tmlt * 1e-6;
+    printf("OMP ELLPACK %d x %d: time %lf  MFLOPS: %f \n", M, N, tmlt, mflops);
 
-    printf("Validation:\t\t%.9f\n", diff);
+    //validate result
+    diff = 0;
+    for (int i = 0; i < M; i++) {
+        float err = serialEllPackResult[i] - ompELLPackresult[i];
+        if(err < 0) err = -err;
+
+        diff += err;
+    }
+    printf("Error: %f \n", diff);
+//
+//    printf("Validation:\t\t%.9f\n", diff);
 #pragma omp parallel
     {
 #pragma omp master
