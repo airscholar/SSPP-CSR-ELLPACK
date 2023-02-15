@@ -7,14 +7,14 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include "mmio.h"
+#include "../mmio.h"
 #include <iostream>
 #include <string>
 #include <vector>
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
-#include "MatrixBase.h"
+#include "../MatrixBase.h"
 
 using namespace std;
 
@@ -31,8 +31,7 @@ class MatrixCSR : public MatrixBase {
     double *AS{};
 
 public:
-    MatrixCSR(int rows, int cols, int nz, int *I, int *J, double *val, double *x) : MatrixBase(rows, cols, nz, I, J,
-                                                                                               val, x) {
+    MatrixCSR(int rows, int cols, int nz, int *I, int *J, double *val, double *x) {
         this->rows = rows;
         this->cols = cols;
         this->nz = nz;
@@ -46,27 +45,39 @@ public:
         this->AS = new double[nz];
 
         this->setIRP(nz, I);
-        this->setJA(nz, I,  J);
+        this->setJA(nz, I, J);
         this->setAS(nz, val);
-
-        this->sortData(I, J, val, nz);
     }
 
     double *serialMultiply(double *x, double *y) override;
 
-    double *openMPMultiply(double *x, double *y) override;
+    double *openMPMultiplyUnroll2H(double *x, double *y) override;
 
-    void setIRP(int nz, int *I) ;
+    double *openMPMultiplyUnroll2V(double *x, double *y) override;
 
-    void setJA(int nz, int*I, int *J) ;
+    double *openMPMultiplyUnroll4H(double *x, double *y) override;
 
-    void setAS(int nz, double *val) ;
+    double *openMPMultiplyUnroll4V(double *x, double *y) override;
 
-    int *getIRP() ;
+    double *openMPMultiplyUnroll8H(double *x, double *y) override;
 
-    int *getJA() ;
+    double *openMPMultiplyUnroll8V(double *x, double *y) override;
 
-    double *getAS() ;
+    double *openMPMultiplyUnroll16H(double *x, double *y) override;
+
+    double *openMPMultiplyUnroll16V(double *x, double *y) override;
+
+    void setIRP(int nz, int *I);
+
+    void setJA(int nz, int *I, int *J);
+
+    void setAS(int nz, double *val);
+
+    int *getIRP();
+
+    int *getJA();
+
+    double *getAS();
 };
 
 #endif //SMALLSCALE_MATRIXCSR_H

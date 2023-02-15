@@ -5,32 +5,28 @@
 #ifndef SMALLSCALE_MATRIXBASE_H
 #define SMALLSCALE_MATRIXBASE_H
 
-
 class MatrixBase {
-private:
-    int rows;
-    int cols;
-    int nz;
-    int maxNZ;
-    int *I;
-    int *J;
-    int **JD;
-    double *val;
-    double *x;
-    double *y;
-    int *IRP;
-    int *JA;
-    double *AS;
 
 public:
-    MatrixBase(int rows, int cols, int nz, int *I, int *J, double *val, double *x);
-    MatrixBase(int rows, int cols, int nz, int *I, int **J, double *val, double *x);
-
-    virtual void sortData(int *I_, int *J_, double *AS_, int nz) ;
+    static void sortData(int* &I_, int* &J_, double* &AS_, int nz) ;
 
     virtual double *serialMultiply(double *x, double *y) = 0;
-    virtual double *openMPMultiply(double *x, double *y) = 0;
 
+    virtual double *openMPMultiplyUnroll2H(double *x, double *y) = 0;
+
+    virtual double *openMPMultiplyUnroll2V(double *x, double *y) = 0;
+
+    virtual double *openMPMultiplyUnroll4H(double *x, double *y) = 0;
+
+    virtual double *openMPMultiplyUnroll4V(double *x, double *y) = 0;
+
+    virtual double *openMPMultiplyUnroll8H(double *x, double *y) = 0;
+
+    virtual double *openMPMultiplyUnroll8V(double *x, double *y) = 0;
+
+    virtual double *openMPMultiplyUnroll16H(double *x, double *y) = 0;
+
+    virtual double *openMPMultiplyUnroll16V(double *x, double *y) = 0;
 };
 
 

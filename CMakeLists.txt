@@ -13,4 +13,4 @@ link_directories(${OPENMP_LIBRARIES})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -O4")
 
-add_executable(SmallScale MatrixBase.cpp main.cpp mmio.cpp MatrixCSR.cpp MatrixELLPACK.cpp wtime.cpp MatrixCSR.cu)
+add_executable(SmallScale MatrixBase.cpp main.cpp mmio.cpp OMP/MatrixCSR.cpp OMP/MatrixELLPACK.cpp wtime.cpp CUDA/MatrixCSR.cu)

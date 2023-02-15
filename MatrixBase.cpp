@@ -7,35 +7,7 @@
 #include "MatrixBase.h"
 #include <algorithm>
 
-MatrixBase::MatrixBase(int rows, int cols, int nz, int *I, int *J, double *val, double *x) {
-    this->rows = rows;
-    this->cols = cols;
-    this->nz = nz;
-    this->I = I;
-    this->J = J;
-    this->val = val;
-    this->x = x;
-    this->y = new double[rows];
-    this->IRP = new int[rows + 1];
-    this->JA = new int[nz];
-    this->AS = new double[nz];
-}
-
-MatrixBase::MatrixBase(int rows, int cols, int nz, int *I, int **JD, double *val, double *x) {
-    this->rows = rows;
-    this->cols = cols;
-    this->nz = nz;
-    this->I = I;
-    this->JD = JD;
-    this->val = val;
-    this->x = x;
-    this->y = new double[rows];
-    this->IRP = new int[rows + 1];
-    this->JA = new int[nz];
-    this->AS = new double[nz];
-}
-
-void MatrixBase::sortData(int *I_, int *J_, double *AS_, int nz) {
+void MatrixBase::sortData(int* &I_, int* &J_, double* &AS_, int nz) {
 // create an index array to keep track of the original indices
     std::vector<int> index(nz);
     for (int i = 0; i < nz; ++i) {
