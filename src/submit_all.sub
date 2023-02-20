@@ -1,0 +1,81 @@
+#!/bin/bash
+##
+## MPI submission script for PBS on CRESCENT
+## -----------------------------------------
+##
+## Follow the 5 steps below to configure. If you edit this from Windows,
+## before submitting via "qsub" run "dos2unix" on this file - or you will
+## get strange errors. You have been warned.
+##
+## STEP 1:
+##
+## Enter a job name after the -N on the line below:
+##
+#PBS -N openMP
+##
+## STEP 2:
+##
+## The select line below selects 1 chunk of 4 cpus
+## Make sure to match ncpus to the number of threads
+##
+#PBS -l select=1:ncpus=16:mpiprocs=16
+##
+## STEP 3:
+##
+## Select correct queue:
+##    reserved  queue reserved for this course
+##
+#PBS -q one_day
+##
+## STEP 4:
+##
+## Replace the hpc@cranfield.ac.uk email address
+## with your email address after the -M on the line below:
+## Your email address is NOT your username
+##
+#PBS -m abe
+#PBS -M yusuf.ganiyu.207@cranfield.ac.uk
+##
+##
+##
+## DO NOT CHANGE the following lines
+##------------------------------------------------
+#PBS -j oe
+#PBS -W sandbox=PRIVATE
+#PBS -k n
+ln -s $PWD $PBS_O_WORKDIR/$PBS_JOBID
+##
+## Change to working directory
+cd $PBS_O_WORKDIR
+##
+## Calculate number of CPUs
+export cpus=`cat $PBS_NODEFILE | wc -l`
+##
+##
+##-------------------------------------------------
+##
+## STEP 5:
+## Run the application
+module load fosscuda/2019b
+
+search_dir=./input
+for entry in "$search_dir"/*/*
+do
+  #if entry name ends with .sub
+  if [[ $entry == *.* ]]; then
+    #remove ./ from entry
+    entry=${entry:2}
+    echo "Submitting $entry"
+    for t in 1 2 4 8 16
+    do
+       export OMP_NUM_THREADS=$t
+       echo "./main $entry $t"
+       ./main $entry $t
+    done
+#    qsub $entry
+  fi
+
+#  echo "qsub $entry"
+done
+
+/bin/rm -f ./$PBS_JOBID

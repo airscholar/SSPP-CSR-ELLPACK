@@ -1,0 +1,5 @@
+add_executable(CSR CSR.cpp ../../MatrixBase.cpp ../MatrixCSR.cpp ../../wtime.cpp ../../mmio.cpp ../../OMP_Tests/MatrixCSR_Test.cpp)
+add_executable(CSR_2U CSR_2Unroll.cpp ../../MatrixBase.cpp ../MatrixCSR.cpp ../../wtime.cpp ../../mmio.cpp ../../OMP_Tests/MatrixCSR_Test.cpp)
+add_executable(CSR_4U CSR_4Unroll.cpp ../../MatrixBase.cpp ../MatrixCSR.cpp ../../wtime.cpp ../../mmio.cpp ../../OMP_Tests/MatrixCSR_Test.cpp)
+add_executable(CSR_8U CSR_8Unroll.cpp ../../MatrixBase.cpp ../MatrixCSR.cpp ../../wtime.cpp ../../mmio.cpp ../../OMP_Tests/MatrixCSR_Test.cpp)
+add_executable(CSR_16U CSR_16Unroll.cpp ../../MatrixBase.cpp ../MatrixCSR.cpp ../../wtime.cpp ../../mmio.cpp ../../OMP_Tests/MatrixCSR_Test.cpp)
