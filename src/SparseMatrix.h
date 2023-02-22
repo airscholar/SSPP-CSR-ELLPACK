@@ -18,7 +18,7 @@ public:
         row_ptrs[0] = 0;
     }
 
-    void insert(int i, int j, float value) {
+    void insert(int i, int j, double value) {
         data.push_back(value);
         indices.push_back(Point(i, j));
         row_ptrs[indices.back().x + 1]++;
@@ -37,7 +37,7 @@ public:
             for (int j = row_ptrs[i]; j < row_ptrs[i + 1]; j++) {
                 int x = indices[j].y;
                 int y = indices[j].x;
-                float value = data[j];
+                double value = data[j];
                 // print alternating black and white pixels
                 int pixel_offset = (y * size + x) * 3;
                 if (isBlack) {
@@ -62,7 +62,7 @@ public:
 
 private:
     int size;
-    std::vector<float> data;
+    std::vector<double> data;
     std::vector<Point> indices;
     std::vector<int> row_ptrs;
 };

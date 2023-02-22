@@ -262,9 +262,9 @@ int main(int argc, char *argv[]) {
 //    }
 //
 ////    validate result
-//    float diff = 0;
+//    double diff = 0;
 //    for (int i = 0; i < M; i++) {
-//        float err = serialCSRResult[i] - parallelResult[i];
+//        double err = serialCSRResult[i] - parallelResult[i];
 //        if (err < 0) err = -err;
 //        diff += err;
 //    }
@@ -302,7 +302,7 @@ int main(int argc, char *argv[]) {
 //    //validate result
 //    double diff1 = 0;
 //    for (int i = 0; i < M; i++) {
-//        float err = serialEllPackResult[i] - u2Hresult[i];
+//        double err = serialEllPackResult[i] - u2Hresult[i];
 //        if (err < 0) err = -err;
 //        if(err != 0) printf("serial = %f \t u2H = %f \t err = %f \n", serialEllPackResult[i], u2Hresult[i], err);
 //        diff1 += err;
@@ -323,7 +323,7 @@ int main(int argc, char *argv[]) {
 //    //validate result
 //     diff1 = 0;
 //    for (int i = 0; i < M; i++) {
-//        float err = ompELLPackresult[i] - ompEllpackH[i];
+//        double err = ompELLPackresult[i] - ompEllpackH[i];
 //        if (err < 0) err = -err;
 //        diff1 += err;
 //    }

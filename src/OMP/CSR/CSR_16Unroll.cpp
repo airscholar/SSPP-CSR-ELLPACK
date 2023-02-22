@@ -4,7 +4,7 @@
 #include <utility>
 #include "../../MatrixBase.h"
 #include "../MatrixCSR.h"
-#include "../MatrixELLPACK.h"
+
 #include "../../wtime.h"
 #include <map>
 #include <omp.h>
@@ -74,17 +74,17 @@ int main(int argc, char *argv[]) {
     unrollHGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
 
 //    Unroll Vertical Max Error
-    float diff = 0;
+    double diff = 0;
     for (int i = 0; i < M; i++) {
-        float err = serialResult[i] - unrollVResult[i];
+        double err = serialResult[i] - unrollVResult[i];
         if (err < 0) err = -err;
         if (err > diff) diff = err;
     }
 
     //    Unroll Horizontal Max Error
-    float diff2 = 0;
+    double diff2 = 0;
     for (int i = 0; i < M; i++) {
-        float err = serialResult[i] - unrollHResult[i];
+        double err = serialResult[i] - unrollHResult[i];
         if (err < 0) err = -err;
         if (err > diff2) diff2 = err;
     }

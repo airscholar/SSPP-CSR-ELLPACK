@@ -1,11 +1,3 @@
-// 
-// Author: Salvatore Filippone salvatore.filippone@cranfield.ac.uk
-//
-
-// Computes matrix-vector product. Matrix A is in row-major order
-// i.e. A[i, j] is stored in i * ncols + j element of the vector.
-//
-
 #include <iostream>
 #include <cuda_runtime.h>  // For CUDA runtime API
 #include <helper_cuda.h>  // For checkCudaError macro
@@ -16,7 +8,7 @@
 #include "../../mmio.h"
 #include "../../MatrixBase.h"
 #include "../../OMP/MatrixCSR.h"
-#include "../../OMP/MatrixELLPACK.h"
+
 #include "../../wtime.h"
 
 using namespace std;
@@ -30,88 +22,7 @@ inline double dmin(double a, double b) { return a < b ? a : b; }
 #define BD 256
 const dim3 BLOCK_DIM(BD);
 
-void
-readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, int &ret_code, MM_typecode &matcode, char *fileName) {
-    // Open the file
-    FILE *f = fopen(fileName, "r");
-    if (f == NULL) {
-        printf("Error: could not open file.\n");
-        exit(1);
-    }
 
-    // Read the Matrix Market banner
-    if (mm_read_banner(f, &matcode) != 0) {
-        printf("Error: could not process Matrix Market banner.\n");
-        exit(1);
-    }
-
-    // Check if the matrix type is supported
-    if (mm_is_complex(matcode) || !mm_is_matrix(matcode) || !mm_is_sparse(matcode)) {
-        printf("Error: unsupported matrix type [%s].\n", mm_typecode_to_str(matcode));
-        exit(1);
-    }
-
-//    printf("Matrix type: %s \n", mm_typecode_to_str(matcode));
-    // Get the size of the sparse matrix
-    if ((ret_code = mm_read_mtx_crd_size(f, &M, &N, &nz)) != 0) {
-        printf("Error: could not read matrix size.\n");
-        exit(1);
-    }
-
-    // Allocate memory for the matrices
-    int *tempI = new int[nz];
-    int *tempJ = new int[nz];
-    double *tempVal = new double[nz];
-
-    // Read the data
-    mm_read_mtx_crd_data(f, M, N, nz, tempI, tempJ, tempVal, matcode);
-
-    // Convert the matrix to a symmetric format (if needed)
-    int diagonal = 0;
-    if (mm_is_symmetric(matcode)) {
-        for (int i = 0; i < nz; i++) {
-            if (tempI[i] == tempJ[i]) {
-                diagonal++;
-            }
-        }
-        int oldNz = nz;
-        nz = nz * 2 - diagonal;
-        tempI = (int *) realloc(tempI, nz * sizeof(int));
-        tempJ = (int *) realloc(tempJ, nz * sizeof(int));
-        tempVal = (double *) realloc(tempVal, nz * sizeof(double));
-        int k = oldNz;
-        for (int i = 0; i < oldNz; i++) {
-            if (tempI[i] != tempJ[i]) {
-                tempI[k] = tempJ[i];
-                tempJ[k] = tempI[i];
-                tempVal[k] = tempVal[i];
-                k++;
-            }
-        }
-    }
-
-    // assign value to the pointers
-    I = new int[nz];
-    J = new int[nz];
-    val = new double[nz];
-
-    for (int i = 0; i < nz; i++) {
-        I[i] = tempI[i];
-        J[i] = tempJ[i];
-        val[i] = tempVal[i];
-    }
-
-    // Free the temporary memory
-    delete[] tempI;
-    delete[] tempJ;
-    delete[] tempVal;
-
-    // Close the file
-    fclose(f);
-}
-
-// Simple CPU implementation of matrix addition.
-// This will be the basis for your implementation.
 void CpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double *x, double *y) {
     for (int i = 0; i < rows; i++) {
         double t = 0;
@@ -122,20 +33,13 @@ void CpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double *x, double 
     }
 }
 
-void generateVector(int rows, double *A) {
-    for (int row = 0; row < rows; row++) {
-        A[row] = 1;
-    }
-}
 
-// GPU implementation of matrix_vector product using a block of threads for
-// each row. 
 __device__ void rowReduce(volatile double *sdata, int tid) {
-  sdata[tid] += sdata[tid + 16];
-  sdata[tid] += sdata[tid +  8];
-  sdata[tid] += sdata[tid +  4];
-  sdata[tid] += sdata[tid +  2];
-  sdata[tid] += sdata[tid +  1];
+    sdata[tid] += sdata[tid + 16];
+    sdata[tid] += sdata[tid + 8];
+    sdata[tid] += sdata[tid + 4];
+    sdata[tid] += sdata[tid + 2];
+    sdata[tid] += sdata[tid + 1];
 }
 
 __global__ void gpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double *x, double *y) {
@@ -177,7 +81,7 @@ __global__ void gpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double 
 }
 
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     int nrows, ncols, nz;
     int ret_code;
     MM_typecode matcode;
@@ -213,35 +117,6 @@ int main(int argc, char** argv) {
     h_JA = csr.getJA();
     //AS
     h_AS = csr.getAS();
-
-//    //print IRP
-//    printf("IRP: ");
-//    for (int i = 0; i < nrows + 1; i++) {
-//        printf("%d ", h_IRP[i]);
-//    }
-//    printf("\n");
-//
-//    //print JA
-//    printf("JA: ");
-//    for (int i = 0; i < nz; i++) {
-//        printf("%d ", h_JA[i]);
-//    }
-//    printf("\n");
-//
-//    //print AS
-//    printf("AS: ");
-//    for (int i = 0; i < nz; i++) {
-//        printf("%f ", h_AS[i]);
-//    }
-//    printf("\n");
-//
-//    //print x
-//    printf("x: ");
-//    for (int i = 0; i < nrows; i++) {
-//        printf("%f ", h_x[i]);
-//    }
-//    printf("\n");
-
 
 // ---------------------- Device memory initialisation ---------------------- //
     //  Allocate memory space on the device.
@@ -328,7 +203,8 @@ int main(int argc, char** argv) {
     // 1.19e-07
     //
 
-    printf("NAME: %-15s CPU_TIME: %-10f  GPU_TIME: %-10f  CPU_GFLOPS: %-10f  GPU_GFLOPS: %-10f  MAX_DIFF: %-10f  MAX_REL_DIFF: %-10f\n", argv[0], CPUtime, GPUtime, cpuflops, gpuflops, diff, reldiff);
+    printf("NAME: %-15s TYPE: %-15s OPTION: %-15s CPU_TIME: %-15f GPU_TIME: %-15f CPU_GFLOPS: %-15f GPU_GFLOPS: %-15f MAX_DIFF: %-15f MAX_REL_DIFF: %-15f SPEEDUP: %-15f \n",
+           argv[0], argv[1], "CSR", CPUtime, GPUtime, cpuflops, gpuflops, diff, reldiff, CPUtime / GPUtime);
 
 // ------------------------------- Cleaning up ------------------------------ //
 
@@ -340,12 +216,12 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaFree(d_JA));
     checkCudaErrors(cudaFree(d_AS));
 
-    delete[] h_y_d;
-    delete[] h_IRP;
-    delete[] h_JA;
-    delete[] h_AS;
-    delete[] h_x;
-    delete[] h_y;
+//    delete[] h_y_d;
+//    delete[] h_IRP;
+//    delete[] h_JA;
+//    delete[] h_AS;
+//    delete[] h_x;
+//    delete[] h_y;
 
     return 0;
 }

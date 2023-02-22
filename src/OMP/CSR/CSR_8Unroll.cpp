@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     double diff = MatrixBase::compute_Max_Error(serialResult, unrollVResult, M);
 
     //    Unroll Horizontal Max Error
-    float diff2 = MatrixBase::compute_Max_Error(serialResult, unrollHResult, M);
+    double diff2 = MatrixBase::compute_Max_Error(serialResult, unrollHResult, M);
 
 #pragma omp parallel
     {

@@ -5,7 +5,7 @@
 #include "MatrixELLPACK.h"
 
 // Returns the MAXNZ of the ELLPACK
-int MatrixELLPACK::getMaxNZ(int nz, int *I) {
+void MatrixELLPACK::setMaxNZ(int nz, int *I) {
     // We create an array that will contain the number of non-zero for each row
     // from this array we will get the max, that is MAXNZ
     int *temp = new int[nz];
@@ -18,13 +18,16 @@ int MatrixELLPACK::getMaxNZ(int nz, int *I) {
         temp[I[i]]++;
     }
 
-    int maximum = temp[0];
+    this->maxNZ = temp[0];
 
     for (int i = 1; i < nz; i++) {
-        if (temp[i] > maximum)
-            maximum = temp[i];
+        if (temp[i] > maxNZ)
+            maxNZ = temp[i];
     }
-    return maximum;
+}
+
+int MatrixELLPACK::getMaxNZ() {
+    return this->maxNZ;
 }
 
 void MatrixELLPACK::setJA(int nz, int *I, int *J) {
@@ -40,7 +43,7 @@ void MatrixELLPACK::setJA(int nz, int *I, int *J) {
                 JA[idx] = J[k - 1];
                 k++;
             } else
-                JA[idx] = -1;
+                JA[idx] = 0;
         }
     }
 }
@@ -57,7 +60,8 @@ void MatrixELLPACK::setAS(int maxNZ, double *val) {
             if (I[l - 1] + 1 == x) {
                 AS[idx] = val[l - 1];
                 l++;
-            }
+            }else
+                AS[idx] = 0;
         }
     }
 }
@@ -79,10 +83,6 @@ double* MatrixELLPACK::serialMultiply(double* x, double* y) {
         double t = 0;
         // Iterate through all the non-zero elements of the current row.
         for (int j = 0; j < maxNZ; j++) {
-            // If the current element is the last NZ element of the row, then break out of the loop.
-            if (JA[i * maxNZ + j] == -1) {
-                break;
-            }
             // Accumulate the product of the current non-zero element and the corresponding entry in the input vector.
             t += AS[i * maxNZ + j] * x[JA[i * maxNZ + j]];
         }
@@ -100,9 +100,6 @@ double* MatrixELLPACK::openMPMultiplyUnroll2V(double *x, double *y) {
     for (i = 0; i < rows - rows % 2; i += 2) {
         t0 = 0, t1 = 0;
         for (j = 0; j < maxNZ; j++) {
-            if (JA[i * maxNZ + j] == -1 && JA[(i + 1) * maxNZ + j] == -1) {
-                break;
-            }
             if ((i + 0) * maxNZ + j < rows)
                 t0 += AS[i * maxNZ + j] * x[JA[i * maxNZ + j]];
             if ((i + 1) * maxNZ + j < rows)
@@ -116,9 +113,6 @@ double* MatrixELLPACK::openMPMultiplyUnroll2V(double *x, double *y) {
     for (i = rows - rows % 2; i < rows; i++) {
         t = 0;
         for (j = 0; j < maxNZ; j++) {
-            if (JA[i * maxNZ + j] == -1) {
-                break;
-            }
             t += AS[i * maxNZ + j] * x[JA[i * maxNZ + j]];
         }
         y[i] = t;
@@ -135,10 +129,6 @@ double* MatrixELLPACK::openMPMultiplyUnroll4V(double *x, double *y) {
     for (i = 0; i < rows - rows % 4; i += 4) {
         t0 = 0, t1 = 0, t2 = 0, t3 = 0;
         for (j = 0; j < maxNZ; j++) {
-            if (JA[i * maxNZ + j] == -1 && JA[(i + 1) * maxNZ + j] == -1 && JA[(i + 2) * maxNZ + j] == -1 &&
-                JA[(i + 3) * maxNZ + j] == -1) {
-                break;
-            }
             if ((i + 0) * maxNZ + j < rows)
                 t0 += AS[i * maxNZ + j] * x[JA[i * maxNZ + j]];
             if ((i + 1) * maxNZ + j < rows)
@@ -158,9 +148,6 @@ double* MatrixELLPACK::openMPMultiplyUnroll4V(double *x, double *y) {
     for (i = rows - rows % 4; i < rows; i++) {
         t = 0;
         for (j = 0; j < maxNZ; j++) {
-            if (JA[i * maxNZ + j] == -1) {
-                break;
-            }
             t += AS[i * maxNZ + j] * x[JA[i * maxNZ + j]];
         }
         y[i] = t;
@@ -177,13 +164,6 @@ double* MatrixELLPACK::openMPMultiplyUnroll8V(double *x, double *y) {
     for (i = 0; i < rows - rows % 8; i += 8) {
         t0 = 0, t1 = 0, t2 = 0, t3 = 0, t4 = 0, t5 = 0, t6 = 0, t7 = 0;
         for (j = 0; j < maxNZ; j++) {
-            if (JA[i * maxNZ + j] == -1 && JA[(i + 1) * maxNZ + j] == -1 && JA[(i + 2) * maxNZ + j] == -1 &&
-                JA[(i + 3) * maxNZ + j] == -1 &&
-                JA[(i + 4) * maxNZ + j] == -1 && JA[(i + 5) * maxNZ + j] == -1 && JA[(i + 6) * maxNZ + j] == -1 &&
-                JA[(i + 7) * maxNZ + j] == -1) {
-                break;
-            }
-
             if ((i + 0) * maxNZ + j < rows)
                 t0 += AS[i * maxNZ + j] * x[JA[i * maxNZ + j]];
             if ((i + 1) * maxNZ + j < rows)
@@ -215,9 +195,6 @@ double* MatrixELLPACK::openMPMultiplyUnroll8V(double *x, double *y) {
     for (i = rows - rows % 8; i < rows; i++) {
         t = 0;
         for (j = 0; j < maxNZ; j++) {
-            if (JA[i * maxNZ + j] == -1) {
-                break;
-            }
             t += AS[i * maxNZ + j] * x[JA[i * maxNZ + j]];
         }
         y[i] = t;
@@ -235,15 +212,6 @@ double* MatrixELLPACK::openMPMultiplyUnroll16V(double *x, double *y) {
         t0 = 0, t1 = 0, t2 = 0, t3 = 0, t4 = 0, t5 = 0, t6 = 0, t7 = 0, t8 = 0, t9 = 0, t10 = 0, t11 = 0, t12 = 0, t13 = 0,
         t14 = 0, t15 = 0;
         for (j = 0; j < maxNZ; j++) {
-            if (JA[i * maxNZ + j] == -1 && JA[(i + 1) * maxNZ + j] == -1 && JA[(i + 2) * maxNZ + j] == -1 &&
-                JA[(i + 3) * maxNZ + j] == -1 && JA[(i + 4) * maxNZ + j] == -1 && JA[(i + 5) * maxNZ + j] == -1 &&
-                JA[(i + 6) * maxNZ + j] == -1 && JA[(i + 7) * maxNZ + j] == -1 && JA[(i + 8) * maxNZ + j] == -1 &&
-                JA[(i + 9) * maxNZ + j] == -1 && JA[(i + 10) * maxNZ + j] == -1 && JA[(i + 11) * maxNZ + j] == -1 &&
-                JA[(i + 12) * maxNZ + j] == -1 && JA[(i + 13) * maxNZ + j] == -1 && JA[(i + 14) * maxNZ + j] == -1 &&
-                JA[(i + 15) * maxNZ + j] == -1) {
-                break;
-            }
-
             if ((i + 0) * maxNZ + j < rows)
                 t0 += AS[i * maxNZ + j] * x[JA[i * maxNZ + j]];
             if ((i + 1) * maxNZ + j < rows)
@@ -300,9 +268,6 @@ double* MatrixELLPACK::openMPMultiplyUnroll16V(double *x, double *y) {
     for (i = rows - rows % 16; i < rows; i++) {
         t = 0;
         for (j = 0; j < maxNZ; j++) {
-            if (JA[i * maxNZ + j] == -1) {
-                break;
-            }
             t += AS[i * maxNZ + j] * x[JA[i * maxNZ + j]];
         }
         y[i] = t;

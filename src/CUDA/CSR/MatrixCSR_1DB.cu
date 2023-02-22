@@ -1,11 +1,3 @@
-// 
-// Author: Salvatore Filippone salvatore.filippone@cranfield.ac.uk
-//
-
-// Computes matrix-vector product. Matrix A is in row-major order
-// i.e. A[i, j] is stored in i * ncols + j element of the vector.
-//
-
 #include <iostream>
 #include <cuda_runtime.h>  // For CUDA runtime API
 #include <helper_cuda.h>  // For checkCudaError macro
@@ -38,14 +30,12 @@ const dim3 BLOCK_DIM(BD);
                               exit(1);     \
     } while (0)
 
-// GPU implementation of matrix_vector product using a block of threads for
-// each row. 
 __device__ void rowReduce(volatile double *sdata, int tid) {
     sdata[tid] += sdata[tid + 16];
-    sdata[tid] += sdata[tid +  8];
-    sdata[tid] += sdata[tid +  4];
-    sdata[tid] += sdata[tid +  2];
-    sdata[tid] += sdata[tid +  1];
+    sdata[tid] += sdata[tid + 8];
+    sdata[tid] += sdata[tid + 4];
+    sdata[tid] += sdata[tid + 2];
+    sdata[tid] += sdata[tid + 1];
 }
 
 __global__ void gpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double *x, double *y) {
@@ -83,7 +73,7 @@ __global__ void gpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double 
     }
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     int nrows, ncols, nz;
 
     int *I, *J;
@@ -116,35 +106,6 @@ int main(int argc, char** argv) {
     h_JA = csr.getJA();
     //AS
     h_AS = csr.getAS();
-
-//    //print IRP
-//    printf("IRP: ");
-//    for (int i = 0; i < nrows + 1; i++) {
-//        printf("%d ", h_IRP[i]);
-//    }
-//    printf("\n");
-//
-//    //print JA
-//    printf("JA: ");
-//    for (int i = 0; i < nz; i++) {
-//        printf("%d ", h_JA[i]);
-//    }
-//    printf("\n");
-//
-//    //print AS
-//    printf("AS: ");
-//    for (int i = 0; i < nz; i++) {
-//        printf("%f ", h_AS[i]);
-//    }
-//    printf("\n");
-//
-//    //print x
-//    printf("x: ");
-//    for (int i = 0; i < nrows; i++) {
-//        printf("%f ", h_x[i]);
-//    }
-//    printf("\n");
-
 
 // ---------------------- Device memory initialisation ---------------------- //
     //  Allocate memory space on the device.
@@ -197,8 +158,8 @@ int main(int argc, char** argv) {
     //get errors from kernel
     cudaError_t err = cudaGetLastError();
 //    if (err != cudaSuccess)
-        printf("Error name: %s \t Error description: %s \t Error code: %d \t \n", cudaGetErrorName(err),
-               cudaGetErrorString(err), err);
+    printf("Error name: %s \t Error description: %s \t Error code: %d \t \n", cudaGetErrorName(err),
+           cudaGetErrorString(err), err);
 
     double gpuflops = flopcnt / timer->getTime();
     double GPUtime = timer->getTime();
@@ -226,8 +187,8 @@ int main(int argc, char** argv) {
 //            printf("h_y[%d] = %f, h_y_d[%d] = %f, diff = %f\n", row, h_y[row], row, h_y_d[row],
 //                   std::abs(h_y[row] - h_y_d[row]));
     }
-    printf("NAME: %-15s CPU_TIME: %-10f  GPU_TIME: %-10f  CPU_GFLOPS: %-10f  GPU_GFLOPS: %-10f  MAX_DIFF: %-10e  MAX_REL_DIFF: %-10e\n",
-           argv[0], CPUtime, GPUtime, cpuflops, gpuflops, diff, reldiff);
+    printf("NAME: %-15s TYPE: %-15s OPTION: %-15s CPU_TIME: %-15f GPU_TIME: %-15f CPU_GFLOPS: %-15f GPU_GFLOPS: %-15f MAX_DIFF: %-15f MAX_REL_DIFF: %-15f SPEEDUP: %-15f \n",
+           argv[0], argv[1], "CSR", CPUtime, GPUtime, cpuflops, gpuflops, diff, reldiff, CPUtime / GPUtime);
 
     // Rel diff should be as close as possible to unit roundoff; double
     // corresponds to IEEE single precision, so unit roundoff is
@@ -244,12 +205,12 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaFree(d_JA));
     checkCudaErrors(cudaFree(d_AS));
 
-    delete[] h_y_d;
-    delete[] h_IRP;
-    delete[] h_JA;
-    delete[] h_AS;
-    delete[] h_x;
-    delete[] h_y;
+//    delete[] h_y_d;
+//    delete[] h_IRP;
+//    delete[] h_JA;
+//    delete[] h_AS;
+//    delete[] h_x;
+//    delete[] h_y;
 
     return 0;
 }

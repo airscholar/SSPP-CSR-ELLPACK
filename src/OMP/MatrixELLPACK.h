@@ -33,14 +33,14 @@ public:
         this->val = val;
         this->x = x;
 
-        this->maxNZ = getMaxNZ(nz, I);
+        this->setMaxNZ(nz, I);
         this->JA = new int[maxNZ * this->rows];
         this->AS = new double[maxNZ * this->rows];
 
         this->setJA(nz, I, J);
         this->setAS(maxNZ, val);
 
-        //print JA in matrix format
+//        //print JA in matrix format
 //        printf("JA: \n");
 //        for(int i = 0; i < rows; i++){
 //            for(int j = 0; j < maxNZ; j++){
@@ -48,15 +48,56 @@ public:
 //            }
 //            printf("\n");
 //        }
+//
 //        //print AS
 //        printf("AS: ");
-//        for(int i = 0; i < nz; i++){
-//            printf("%f ", AS[i]);
+//        for(int i = 0; i < rows; i++){
+//            for (int j = 0; j < maxNZ; j++){
+//                printf("%f ", AS[i * maxNZ + j]);
+//            }
+//            printf("\n");
 //        }
 //        printf("\n");
+//
+//        // transpose JA
+//        int *JA_T = new int[maxNZ * this->rows];
+//        for(int i = 0; i < rows; i++){
+//            for(int j = 0; j < maxNZ; j++){
+//                JA_T[j * rows + i] = JA[i * maxNZ + j];
+//            }
+//        }
+//
+//        // transpose AS
+//        double *AS_T = new double[maxNZ * this->rows];
+//        for(int i = 0; i < rows; i++){
+//            for(int j = 0; j < maxNZ; j++){
+//                AS_T[j * rows + i] = AS[i * maxNZ + j];
+//            }
+//        }
+//
+//        // print JA_T
+//        printf("JA_T: \n");
+//        for(int i = 0; i < maxNZ; i++){
+//            for(int j = 0; j < rows; j++){
+//                printf("%d ", JA_T[i * rows + j]);
+//            }
+//            printf("\n");
+//        }
+//
+//        // print AS_T
+//        printf("AS_T: \n");
+//        for(int i = 0; i < maxNZ; i++){
+//            for(int j = 0; j < rows; j++){
+//                printf("%f ", AS_T[i * rows + j]);
+//            }
+//            printf("\n");
+//        }
+
     }
 
-    int getMaxNZ(int nz, int *I);
+    void setMaxNZ(int nz, int *I);
+
+    int getMaxNZ();
 
     void setJA(int nz, int *I, int *J) override;
 

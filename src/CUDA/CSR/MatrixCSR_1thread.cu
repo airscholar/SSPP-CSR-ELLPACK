@@ -17,97 +17,19 @@
 #include "../../mmio.h"
 #include "../../MatrixBase.h"
 #include "../../OMP/MatrixCSR.h"
-#include "../../OMP/MatrixELLPACK.h"
+
 #include "../../wtime.h"
 
 using namespace std;
 
 inline double dmin(double a, double b) { return a < b ? a : b; }
 
-map<pair<int, int>, double> matrix; // use a map to store the values of I, J and V
 //const int ntimes = 5;
 
 //Simple dimension: define a 1D block structure
 #define BD 256
 const dim3 BLOCK_DIM(BD);
 
-void
-readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, int &ret_code, MM_typecode &matcode, char *fileName) {
-    // Open the file
-    FILE *f = fopen(fileName, "r");
-    if (f == NULL) {
-        printf("Error: could not open file.\n");
-        exit(1);
-    }
-
-    printf("Name correct!");
-
-    // Read the Matrix Market banner
-    if (mm_read_banner(f, &matcode) != 0) {
-        printf("Error: could not process Matrix Market banner.\n");
-        exit(1);
-    }
-
-    printf("Banner correct!");
-
-    // Check if the matrix type is supported
-    if (mm_is_complex(matcode) || !mm_is_matrix(matcode) || !mm_is_sparse(matcode)) {
-        printf("Error: unsupported matrix type [%s].\n", mm_typecode_to_str(matcode));
-        exit(1);
-    }
-
-//    printf("Matrix type: %s \n", mm_typecode_to_str(matcode));
-    // Get the size of the sparse matrix
-    if ((ret_code = mm_read_mtx_crd_size(f, &M, &N, &nz)) != 0) {
-        printf("Error: could not read matrix size.\n");
-        exit(1);
-    }
-
-    printf("M: %d, N: %d, nz: %d\n", M, N, nz);
-
-    // Allocate memory for the matrices
-    I = new int[nz];
-    J = new int[nz];
-    val = new double[nz];
-
-    // Read the data
-    mm_read_mtx_crd_data(f, M, N, nz, I, J, val, matcode);
-
-    // Convert the matrix to a symmetric format (if needed)
-    int diagonal = 0;
-    if (mm_is_symmetric(matcode)) {
-        for (int i = 0; i < nz; i++) {
-            if (I[i] == J[i]) {
-                diagonal++;
-            }
-        }
-        int oldNz = nz;
-        nz = nz * 2 - diagonal;
-        I = (int *) realloc(I, nz * sizeof(int));
-        J = (int *) realloc(J, nz * sizeof(int));
-        val = (double *) realloc(val, nz * sizeof(double));
-        int k = oldNz;
-        for (int i = 0; i < oldNz; i++) {
-            if (I[i] != J[i]) {
-                I[k] = J[i];
-                J[k] = I[i];
-                val[k] = val[i];
-                k++;
-            }
-        }
-    }
-
-    // Create a map to store the matrix
-    for (int i = 0; i < nz; i++) {
-        matrix[make_pair(I[i], J[i])] = val[i];
-    }
-
-    // Close the file
-    fclose(f);
-}
-
-// Simple CPU implementation of matrix addition.
-// This will be the basis for your implementation.
 void CpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double *x, double *y) {
     for (int i = 0; i < rows; i++) {
         double t = 0;
@@ -122,10 +44,10 @@ void CpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double *x, double 
 // each row.
 __device__ void rowReduce(volatile double *sdata, int tid) {
     sdata[tid] += sdata[tid + 16];
-    sdata[tid] += sdata[tid +  8];
-    sdata[tid] += sdata[tid +  4];
-    sdata[tid] += sdata[tid +  2];
-    sdata[tid] += sdata[tid +  1];
+    sdata[tid] += sdata[tid + 8];
+    sdata[tid] += sdata[tid + 4];
+    sdata[tid] += sdata[tid + 2];
+    sdata[tid] += sdata[tid + 1];
 }
 
 // GPU implementation of matrix_vector product: see if you can use
@@ -170,11 +92,6 @@ __global__ void gpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double 
     }
 }
 
-void generateVector(int rows, double *A) {
-    for (int row = 0; row < rows; row++) {
-        A[row] = 1;
-    }
-}
 
 int main(int argc, char **argv) {
     int nrows, ncols, nz;
@@ -209,7 +126,7 @@ int main(int argc, char **argv) {
     //convert double to double
     double *h_AS = new double[nz];
     h_AS = csr.getAS();
-    
+
     double *h_y = new double[nz];
     double *h_y_d = new double[nz];
 
@@ -290,7 +207,8 @@ int main(int argc, char **argv) {
 //            printf("h_y[%d] = %f, h_y_d[%d] = %f, diff = %f\n", row, h_y[row], row, h_y_d[row],
 //                   std::abs(h_y[row] - h_y_d[row]));
     }
-    printf("NAME: %-15s CPU_TIME: %-10f  GPU_TIME: %-10f  CPU_GFLOPS: %-10f  GPU_GFLOPS: %-10f  MAX_DIFF: %-10f  MAX_REL_DIFF: %-10f\n", argv[0], CPUtime, GPUtime, cpuflops, gpuflops, diff, reldiff);
+    printf("NAME: %-15s TYPE: %-15s OPTION: %-15s CPU_TIME: %-15f GPU_TIME: %-15f CPU_GFLOPS: %-15f GPU_GFLOPS: %-15f MAX_DIFF: %-15f MAX_REL_DIFF: %-15f SPEEDUP: %-15f \n",
+           argv[0], argv[1], "CSR", CPUtime, GPUtime, cpuflops, gpuflops, diff, reldiff, CPUtime / GPUtime);
 
 //    std::cout << "Max diff = " << diff << "  Max rel diff = " << reldiff << std::endl;
     // Rel diff should be as close as possible to unit roundoff; double
