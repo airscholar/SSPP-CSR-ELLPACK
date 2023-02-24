@@ -1,0 +1,114 @@
+#!/bin/bash
+##
+## GPU submission script for PBS on CRESCENT
+## -----------------------------------------
+##
+## Follow the 5 steps below to configure. If you edit this from Windows,
+## *before* submitting via "qsub" run "dos2unix" on this file - or you will
+## get strange errors. You have been warned.
+## 
+## STEP 1:
+## The following line contains the job name:
+##
+#PBS -N cudatest
+##
+## STEP 2:
+##
+##
+#PBS -l select=1:ncpus=1:mpiprocs=1:ngpus=1
+##
+## STEP 3:
+##
+## Select correct queue:
+##
+## for this class we have a special queue
+##
+#PBS -q gpu
+#PBS -l walltime=24:00:00
+##
+## STEP 4:
+##
+## Put YOUR email address in the next line:
+##
+#PBS -M yusuf.ganiyu.207@cranfield.ac.uk
+##
+##
+##
+## DO NOT CHANGE the following lines
+##------------------------------------------------
+#PBS -j oe
+#PBS -v "CUDA_VISIBLE_DEVICES="
+#PBS -W sandbox=PRIVATE
+#PBS -V
+#PBS -m abe 
+#PBS -k n
+##
+## Change to working directory
+ln -s $PWD $PBS_O_WORKDIR/$PBS_JOBID
+cd $PBS_O_WORKDIR
+## Allocated gpu(s)
+echo CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES
+##
+## Calculate number of CPUs
+cpus=`cat $PBS_NODEFILE | wc -l`
+gpus=`echo $CUDA_VISIBLE_DEVICES|awk -F"," '{print NF}'`
+##
+##
+##-------------------------------------------------
+##
+## STEP 5: 
+## 
+## Put correct parameters in mpirun execution line
+## below:
+##
+
+search_dir=./CUDA
+input_dir=./input
+for input_entry in "$input_dir"/**/*
+do
+  for entry in "$search_dir"/**/*
+  do
+    # if entry name starts with block or eblock or grid
+    if [[ $entry == ./CUDA/CSR/CSR_* ]] || [[ $entry == ./CUDA/ELLPACK/ELL* ]] || [[ $entry != *.cu ]]; then
+      #remove ./ from entry
+      entry=${entry:2}
+      for t in 1 2 4 8 16
+      do
+  #       export OMP_NUM_THREADS=$t
+  #       echo "./main $entry $t"
+         ./$entry $input_entry $t
+      done
+      echo " "
+    fi
+  done
+done
+
+
+##./Block1D ../input/cop20k_A/cop20k_A.mtx
+#./Matrix1Thread ../input/Cube_Coup_dt0/Cube_Coup_dt0.mtx
+#./Block1D ../input/Cube_Coup_dt0/Cube_Coup_dt0.mtx
+#./EBlock1DB ../input/Cube_Coup_dt0/Cube_Coup_dt0.mtx
+#./EBlock2DB ../input/Cube_Coup_dt0/Cube_Coup_dt0.mtx
+#./Block1D ../input/cant/cant.mtx
+#./Block1DB_2H ../input/cant/cant.mtx
+#./Block1DB_4H ../input/cant/cant.mtx
+#./Grid1D ../input/cant/cant.mtx
+#./Block2DB ../input/cant/cant.mtx
+#./Block2DB_2H ../input/cant/cant.mtx
+#./Block2DB_4H ../input/cant/cant.mtx
+#./EBlock1DG ../input/cant/cant.mtx
+#./EBlock1DB ../input/cant/cant.mtx
+#./EBlock1DB_2H ../input/cant/cant.mtx
+#./EBlock1DB_4H ../input/cant/cant.mtx
+#./EBlock1DB_8H ../input/cant/cant.mtx
+#./EBlock1DB_16H ../input/cant/cant.mtx
+#./EBlock2D ../input/cant/cant.mtx
+#./Matrix1Thread ../input/cant/cant.mtx
+#./Grid2DB ../input/Cube_Coup_dt0/Cube_Coup_dt0.mtx
+#./Grid1D ../input/cage4/cage4.mtx
+#./Grid1D ../input/cant/cant.mtx
+#./Grid2DB ../input/cant/cant.mtx
+#./Grid2DB ../input/cage4/cage4.mtx
+#./matrix_add
+
+/bin/rm -f $PBS_JOBID
