@@ -1,23 +1,23 @@
-search_dir=./OMP
+search_dir=../cmake-build-debug
 input_dir=../input
 
 # Set the patterns for the file names you want to select
 for input_entry in "$input_dir"/**/*; do
   # Use find to select only files that match the desired pattern
-  for entry in "$search_dir"/*/*; do
+  for entry in "$search_dir"/*; do
     # If the file is an executable
     if file "$entry" | grep -q "executable"; then
       # Remove "./" from entry
       entry=${entry#./}
-      for t in 1 2 4 8 16; do
-        export OMP_NUM_THREADS=$t
+#      for t in 1 2 4 8 16; do
+#        export OMP_NUM_THREADS=$t
         # Run the command using the selected file
-        echo "$entry" "$input_entry" "$t"
-      done
+        ./"$entry" "$input_entry" "$t"
+#      done
       echo " "
     fi
   done
-  break
+#  break
 done
 
 ##ONLY FILES THAT STARTS WITH BLOCK, EBLOCK AND GRID WILL BE SUBMITTED

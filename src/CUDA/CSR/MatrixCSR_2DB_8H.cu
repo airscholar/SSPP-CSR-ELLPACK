@@ -102,8 +102,7 @@ __global__ void gpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double 
 
 int main(int argc, char **argv) {
     int nrows, ncols, nz;
-    int ret_code;
-    MM_typecode matcode;
+
 
     int *I, *J;
     double *val;
@@ -119,7 +118,7 @@ int main(int argc, char **argv) {
     MatrixBase::sortData(I, J, val, nz);
 
     double *h_x = new double[nrows];
-    generateVector(nrows, h_x);
+    h_x = MatrixBase::generateVector(nrows);
 
     MatrixCSR csr(nrows, ncols, nz, I, J, val, h_x);
 // ----------------------- Host memory initialisation ----------------------- //

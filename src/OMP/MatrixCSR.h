@@ -18,26 +18,16 @@
 using namespace std;
 
 class MatrixCSR : public MatrixBase {
-    int rows;
-    int cols;
-    int nz;
-    int *I;
-    int *J;
-    double *val;
-    int *IRP{};
-    int *JA{};
-    double *x;
-    double *AS{};
 
 public:
-    MatrixCSR(int rows, int cols, int nz, int *I, int *J, double *val, double *x) {
-        this->rows = rows;
-        this->cols = cols;
-        this->nz = nz;
-        this->I = I;
-        this->J = J;
-        this->val = val;
-        this->x = x;
+    MatrixCSR(int rows_, int cols_, int nz_, int* &I_, int* &J_, double* &val_, double *x_) {
+        rows = rows_;
+        cols = cols_;
+        nz = nz_;
+        I = I_;
+        J = J_;
+        val = val_;
+        x = x_;
 
         this->IRP = new int[rows + 1];
         this->JA = new int[nz];

@@ -24,6 +24,18 @@ private:
     map<pair<int, int>, double> matrix; // use a map to store the values of I, J and V
 
 public:
+    int rows;
+    int cols;
+    int nz;
+    int maxNZ;
+    int *I;
+    int *J;
+    double *val;
+    int *JA{};
+    double *x;
+    double *AS{};
+    int *IRP{};
+
     static double *generateVector(int size);
 
     static void readFile(int &M, int &N, int &nz, int *&I, int *&J, double *&val, char *fileName);

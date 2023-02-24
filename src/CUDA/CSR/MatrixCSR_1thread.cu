@@ -63,9 +63,7 @@ __global__ void gpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double 
         double sum = 0;
         int start = IRP[row];
         int end = IRP[row + 1];
-        for (int i = start + tid; i < end; i += BD) {
-            sum += AS[i] * x[JA[i]];
-        }
+
         sdata[tid] = sum;
     }
     __syncthreads();
@@ -85,9 +83,6 @@ __global__ void gpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double 
 
     __syncthreads();
 
-    if (tid == 0) {
-        if (row < rows) {
-            y[row] = sdata[0];
         }
     }
 }
@@ -95,8 +90,7 @@ __global__ void gpuMatrixVector(int rows, int *IRP, int *JA, double *AS, double 
 
 int main(int argc, char **argv) {
     int nrows, ncols, nz;
-    int ret_code;
-    MM_typecode matcode;
+
 
     int *I, *J;
     double *val;
@@ -112,7 +106,7 @@ int main(int argc, char **argv) {
     MatrixBase::sortData(I, J, val, nz);
 
     double *h_x = new double[nrows];
-    generateVector(nrows, h_x);
+    h_x = MatrixBase::generateVector(nrows);
 
     MatrixCSR csr(nrows, ncols, nz, I, J, val, h_x);
 // ----------------------- Host memory initialisation ----------------------- //
@@ -220,15 +214,15 @@ int main(int argc, char **argv) {
 
     delete timer;
 
-//    checkCudaErrors(cudaFree(d_x));
-//    checkCudaErrors(cudaFree(d_y));
+    checkCudaErrors(cudaFree(d_x));
+    checkCudaErrors(cudaFree(d_y));
     checkCudaErrors(cudaFree(d_IRP));
     checkCudaErrors(cudaFree(d_JA));
     checkCudaErrors(cudaFree(d_AS));
 
-    delete[] h_IRP;
-    delete[] h_JA;
-    delete[] h_AS;
+//    delete[] h_IRP;
+//    delete[] h_JA;
+//    delete[] h_AS;
 //    delete[] h_x;
 //    delete[] h_y;
 

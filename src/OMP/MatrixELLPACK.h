@@ -11,34 +11,23 @@
 #include "../MatrixBase.h"
 
 class MatrixELLPACK: public MatrixBase{
-private:
-    int rows;
-    int cols;
-    int nz;
-    int maxNZ;
-    int *I;
-    int *J;
-    double *val;
-    int *JA{};
-    double *x;
-    double *AS{};
-
 public:
-    MatrixELLPACK(int rows, int cols, int nz, int* &I, int* &J, double* &val, double *x) {
-        this->rows = rows;
-        this->cols = cols;
-        this->nz = nz;
-        this->I = I;
-        this->J = J;
-        this->val = val;
-        this->x = x;
+    MatrixELLPACK(int rows_, int cols_, int nz_, int* &I_, int* &J_, double* &val_, double *x_) {
+        rows = rows_;
+        cols = cols_;
+        nz = nz_;
+        I = I_;
+        J = J_;
+        val = val_;
+        x = x_;
 
-        this->setMaxNZ(nz, I);
-        this->JA = new int[maxNZ * this->rows];
-        this->AS = new double[maxNZ * this->rows];
+        setMaxNZ(nz, I);
 
-        this->setJA(nz, I, J);
-        this->setAS(maxNZ, val);
+        JA = new int[maxNZ * rows];
+        AS = new double[maxNZ * rows];
+
+        setJA(nz, I, J);
+        setAS(maxNZ, val);
 
 //        //print JA in matrix format
 //        printf("JA: \n");
@@ -48,7 +37,6 @@ public:
 //            }
 //            printf("\n");
 //        }
-//
 //        //print AS
 //        printf("AS: ");
 //        for(int i = 0; i < rows; i++){
@@ -60,7 +48,7 @@ public:
 //        printf("\n");
 //
 //        // transpose JA
-//        int *JA_T = new int[maxNZ * this->rows];
+//        int *JA_T = new int[maxNZ * rows];
 //        for(int i = 0; i < rows; i++){
 //            for(int j = 0; j < maxNZ; j++){
 //                JA_T[j * rows + i] = JA[i * maxNZ + j];
@@ -68,7 +56,7 @@ public:
 //        }
 //
 //        // transpose AS
-//        double *AS_T = new double[maxNZ * this->rows];
+//        double *AS_T = new double[maxNZ * rows];
 //        for(int i = 0; i < rows; i++){
 //            for(int j = 0; j < maxNZ; j++){
 //                AS_T[j * rows + i] = AS[i * maxNZ + j];
