@@ -46,18 +46,18 @@ void CSRResult(char *fileName, std::string matrixType, double *x, double *y, int
         double t1 = wtime();
         matrixCSR.serialMultiply(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    serialGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    serialGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixCSR.openMPMultiplyUnroll2V(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u2VGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u2VGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
 
@@ -65,63 +65,63 @@ void CSRResult(char *fileName, std::string matrixType, double *x, double *y, int
         double t1 = wtime();
         matrixCSR.openMPMultiplyUnroll2H(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u2HGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u2HGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixCSR.openMPMultiplyUnroll4H(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u4HGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u4HGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixCSR.openMPMultiplyUnroll4V(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u4VGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u4VGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixCSR.openMPMultiplyUnroll8V(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u8VGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u8VGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixCSR.openMPMultiplyUnroll8H(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u8HGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u8HGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixCSR.openMPMultiplyUnroll16H(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u16HGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u16HGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixCSR.openMPMultiplyUnroll16V(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u16VGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u16VGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     printFormattedResults(fileName, matrixType, serialGflops, u2VGflops, u2HGflops, u4VGflops, u4HGflops, u8VGflops,
                           u8HGflops,
@@ -138,81 +138,81 @@ void ELLPACKResult(char *fileName, std::string matrixType, double *x, double *y,
         double t1 = wtime();
         matrixELLPack.serialMultiply(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    serialGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    serialGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixELLPack.openMPMultiplyUnroll2V(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u2VGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u2VGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < M; tr++) {
         double t1 = wtime();
         matrixELLPack.openMPMultiplyUnroll2H(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u2HGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u2HGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixELLPack.openMPMultiplyUnroll4H(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u4HGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u4HGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixELLPack.openMPMultiplyUnroll4V(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u4VGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u4VGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixELLPack.openMPMultiplyUnroll8V(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u8VGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u8VGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixELLPack.openMPMultiplyUnroll8H(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u8HGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u8HGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixELLPack.openMPMultiplyUnroll16H(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u16HGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u16HGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         matrixELLPack.openMPMultiplyUnroll16V(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    u16VGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    u16VGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     printFormattedResults(fileName, matrixType, serialGflops, u2VGflops, u2HGflops, u4VGflops, u4HGflops, u8VGflops,
                           u8HGflops,
@@ -249,7 +249,7 @@ int main(int argc, char *argv[]) {
 //        double t1 = wtime();
 //        serialCSRResult = matrixCSR.serialMultiply(x, y);
 //        double t2 = wtime();
-//        tmlt = dmin(tmlt, (t2 - t1));
+//        tmlt += t2 - t1;
 //    }
 //    printf("Serial Done\n");
 //    tmlt = 1e100;
@@ -258,7 +258,7 @@ int main(int argc, char *argv[]) {
 //        double t1 = wtime();
 //        parallelResult = matrixCSR.openMPMultiplyUnroll16H(x, y);
 //        double t2 = wtime();
-//        tmlt = dmin(tmlt, (t2 - t1));
+//        tmlt += t2 - t1;
 //    }
 //
 ////    validate result

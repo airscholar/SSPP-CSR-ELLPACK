@@ -47,9 +47,9 @@ int main(int argc, char *argv[]) {
         double t1 = wtime();
         serialResult = ellpack.serialMultiply(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    serialGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    serialGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
 #pragma omp parallel
     {

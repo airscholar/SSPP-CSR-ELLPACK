@@ -47,14 +47,15 @@ int main(int argc, char *argv[]) {
     double *unrollHResult = new double[M];
     double serialTime = 0, unrollVTime = 0, unrollHTime = 0;
 
+    tmlt = 0;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
-        serialResult = matrixCSR.serialMultiply(x, y);
+        matrixCSR.serialMultiply(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    serialTime = tmlt;
-    serialGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    serialTime = tmlt / ntimes;
+    serialGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
 #pragma omp parallel
     {

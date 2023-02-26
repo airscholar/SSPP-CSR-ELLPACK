@@ -50,18 +50,20 @@ int main(int argc, char *argv[]) {
         double t1 = wtime();
         serialResult = matrixCSR.serialMultiply(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    serialGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    serialTime = tmlt / ntimes;
+    serialGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
     for (int tr = 0; tr < ntimes; tr++) {
         double t1 = wtime();
         unrollVResult = matrixCSR.openMPMultiplyUnroll16V(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    unrollVGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    unrollVTime = tmlt / ntimes;
+    unrollVGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
     tmlt = 1e100;
 
@@ -69,9 +71,10 @@ int main(int argc, char *argv[]) {
         double t1 = wtime();
         unrollHResult = matrixCSR.openMPMultiplyUnroll16H(x, y);
         double t2 = wtime();
-        tmlt = dmin(tmlt, (t2 - t1));
+        tmlt += t2 - t1;
     }
-    unrollHGflops = (2.0 * nz / tmlt * 1e-6) * 0.001;
+    unrollHTime = tmlt / ntimes;
+    unrollHGflops = (2.0 * nz / (tmlt / ntimes) * 1e-6) * 0.001;
 
 //    Unroll Vertical Max Error
     double diff = 0;

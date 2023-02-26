@@ -14,7 +14,7 @@ using namespace std;
 
 inline double dmin(double a, double b) { return a < b ? a : b; }
 
-//const int ntimes = 5;
+const int ntimes = 5;
 
 // Simple 1-D thread block
 // Size should be at least 1 warp
@@ -148,21 +148,27 @@ int main(int argc, char **argv) {
     // all rows.
     //use 1 block per row
     const dim3 GRID_DIM((nrows - 1 + BLOCK_DIM.y) / BLOCK_DIM.y, 1, 1);
+    double GPUtime = 0;
+    double gpuflops = 0;
+    for (int i = 0; i < ntimes; i++) {
+        timer->reset();
+        timer->start();
+        gpuMatrixVector<<<GRID_DIM, BLOCK_DIM >>>(nrows, d_IRP, d_JA, d_AS, d_x, d_y);
+        checkCudaErrors(cudaDeviceSynchronize());
+        timer->stop();
 
-    timer->reset();
-    timer->start();
-    gpuMatrixVector<<<GRID_DIM, BLOCK_DIM >>>(nrows, d_IRP, d_JA, d_AS, d_x, d_y);
-    checkCudaErrors(cudaDeviceSynchronize());
-    timer->stop();
+        //get errors from kernel
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("Error name: %s \t Error description: %s \t Error code: %d \t \n", cudaGetErrorName(err),
+               cudaGetErrorString(err), err);
 
-    //get errors from kernel
-    cudaError_t err = cudaGetLastError();
-//    if (err != cudaSuccess)
-    printf("Error name: %s \t Error description: %s \t Error code: %d \t \n", cudaGetErrorName(err),
-           cudaGetErrorString(err), err);
-
-    double gpuflops = flopcnt / timer->getTime();
-    double GPUtime = timer->getTime();
+        //get average time and flops
+        GPUtime += timer->getTime();
+        gpuflops += flopcnt / timer->getTime();
+    }
+    GPUtime /= ntimes;
+    gpuflops /= ntimes;
 //    std::cout << "  GPU time: " << timer->getTime() << " ms." << " GFLOPS " << gpuflops << std::endl;
 
     // Download the resulting vector d_y from the device and store it in h_y_d.

@@ -1,0 +1,8 @@
+# ninja log v5
+1	369	1677286849760516767	CMakeFiles/SmallScale.dir/src/wtime.cpp.o	8130fa8b2c6577e2
+0	419	1677286849814947503	CMakeFiles/SmallScale.dir/src/mmio.cpp.o	8d86c5ab8297ffa
+0	1078	1677286850474198884	CMakeFiles/SmallScale.dir/src/OMP/MatrixELLPACK.cpp.o	b955643e4f7383b9
+0	1083	1677286850479469027	CMakeFiles/SmallScale.dir/src/main.cpp.o	6fd22cd3bac9e554
+0	1126	1677286850522210550	CMakeFiles/SmallScale.dir/src/OMP/MatrixCSR.cpp.o	869769c0b2abd065
+0	1158	1677286850553598945	CMakeFiles/SmallScale.dir/src/MatrixBase.cpp.o	babe91c06b8152df
+1158	1240	1677286850637819560	SmallScale	6756820216349a3b

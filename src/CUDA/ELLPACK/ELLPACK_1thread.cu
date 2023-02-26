@@ -23,7 +23,7 @@ using namespace std;
 
 inline double dmin(double a, double b) { return a < b ? a : b; }
 
-//const int ntimes = 5;
+const int ntimes = 5;
 
 //Simple dimension: define a 1D block structure
 #define BD 256
